@@ -5,144 +5,166 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Heart, Play, BookOpen, Search, Filter, Globe } from "lucide-react";
+import { Heart, Play, BookOpen, Search, Filter, Globe, Star, Moon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Library = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState("all");
-  const [selectedLanguage, setSelectedLanguage] = useState("all");
-  const [selectedOrigin, setSelectedOrigin] = useState("all");
+  const [selectedGenre, setSelectedGenre] = useState("все");
+  const [selectedLanguage, setSelectedLanguage] = useState("все");
+  const [selectedType, setSelectedType] = useState("все");
 
   const stories = [
     {
       id: 1,
-      title: "The Moonlight Princess",
-      genre: "Fantasy",
-      origin: "Japanese",
-      language: "English",
+      title: "Принцесса Луны",
+      genre: "Фантастика",
+      type: "Народная",
+      language: "Русский",
       likes: 124,
       cover: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
-      description: "A beautiful tale of a princess born from moonbeams who must save her kingdom from eternal darkness."
+      description: "Прекрасная история принцессы, рождённой из лунных лучей, которая должна спасти своё королевство от вечной тьмы."
     },
     {
       id: 2,
-      title: "The Clever Hare",
-      genre: "Moral",
-      origin: "African",
-      language: "English",
+      title: "Умный Заяц",
+      genre: "Поучительная",
+      type: "Народная",
+      language: "Русский",
       likes: 89,
       cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
-      description: "A wise hare outsmarts the other forest animals through cleverness and wit."
+      description: "Мудрый заяц перехитрил других лесных животных благодаря своему уму и сообразительности."
     },
     {
       id: 3,
-      title: "The Magic Carpet",
-      genre: "Adventure",
-      origin: "Arabian",
-      language: "English",
+      title: "Волшебный Ковёр",
+      genre: "Приключения",
+      type: "Народная",
+      language: "Русский",
       likes: 156,
       cover: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
-      description: "Join a young merchant on his magical flying carpet as he travels across mystical lands."
+      description: "Присоединяйтесь к молодому торговцу в его путешествии на волшебном летающем ковре через мистические земли."
     },
     {
       id: 4,
-      title: "The Snow Queen",
-      genre: "Fantasy",
-      origin: "Nordic",
-      language: "English",
+      title: "Снежная Королева",
+      genre: "Фантастика",
+      type: "ИИ",
+      language: "Русский",
       likes: 203,
       cover: "https://images.unsplash.com/photo-1551582045-6ec9c11d8697?w=400&h=300&fit=crop",
-      description: "A tale of friendship and courage in the face of an icy queen's spell."
+      description: "История дружбы и мужества перед лицом заклятия ледяной королевы."
     },
     {
       id: 5,
-      title: "The Dancing Bear",
-      genre: "Comedy",
-      origin: "Russian",
-      language: "English",
+      title: "Танцующий Медведь",
+      genre: "Комедия",
+      type: "ИИ",
+      language: "Русский",
       likes: 67,
       cover: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=400&h=300&fit=crop",
-      description: "A humorous story about a bear who discovers his love for dancing."
+      description: "Забавная история о медведе, который обнаружил свою любовь к танцам."
     },
     {
       id: 6,
-      title: "The Golden Fish",
-      genre: "Moral",
-      origin: "Uzbek",
-      language: "English",
+      title: "Золотая Рыбка",
+      genre: "Поучительная",
+      type: "Народная",
+      language: "Русский",
       likes: 78,
       cover: "https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=400&h=300&fit=crop",
-      description: "A fisherman's encounter with a magical golden fish teaches valuable lessons about greed."
+      description: "Встреча рыбака с волшебной золотой рыбкой учит ценным урокам о жадности."
     }
   ];
 
-  const genres = ["All", "Fantasy", "Adventure", "Romance", "Moral", "Comedy", "Mystery"];
-  const languages = ["All", "English", "Uzbek", "Russian", "Spanish", "French", "German"];
-  const origins = ["All", "Japanese", "African", "Arabian", "Nordic", "Russian", "Uzbek", "European"];
+  const genres = ["Все", "Фантастика", "Приключения", "Романтика", "Поучительная", "Комедия", "Мистика"];
+  const languages = ["Все", "Русский", "Узбекский", "Английский"];
+  const types = ["Все", "Народная", "ИИ"];
 
   const filteredStories = stories.filter(story => {
     const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          story.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGenre = selectedGenre === "all" || story.genre.toLowerCase() === selectedGenre.toLowerCase();
-    const matchesLanguage = selectedLanguage === "all" || story.language.toLowerCase() === selectedLanguage.toLowerCase();
-    const matchesOrigin = selectedOrigin === "all" || story.origin.toLowerCase() === selectedOrigin.toLowerCase();
+    const matchesGenre = selectedGenre === "все" || story.genre.toLowerCase() === selectedGenre.toLowerCase();
+    const matchesLanguage = selectedLanguage === "все" || story.language.toLowerCase() === selectedLanguage.toLowerCase();
+    const matchesType = selectedType === "все" || story.type.toLowerCase() === selectedType.toLowerCase();
     
-    return matchesSearch && matchesGenre && matchesLanguage && matchesOrigin;
+    return matchesSearch && matchesGenre && matchesLanguage && matchesType;
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-purple-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-10 left-10 opacity-20">
+        <div className="w-20 h-12 bg-white rounded-full"></div>
+        <div className="w-16 h-10 bg-white rounded-full -mt-6 ml-4"></div>
+      </div>
+      <div className="absolute top-20 right-20 opacity-30">
+        <Star className="w-8 h-8 text-yellow-400 fill-current" />
+      </div>
+      <div className="absolute top-40 right-10 opacity-20">
+        <Moon className="w-12 h-12 text-yellow-300 fill-current" />
+      </div>
+
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <BookOpen className="h-8 w-8 text-purple-600" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              StoryWhisper
-            </h1>
+          <Link to="/" className="flex items-center space-x-3">
+            <div className="relative">
+              <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
+              <Star className="absolute -top-1 -right-1 h-4 w-4 text-yellow-400 fill-current" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                fAIrytales.uz
+              </h1>
+              <p className="text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
+            </div>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/library" className="text-purple-600 font-medium">Library</Link>
-            <Link to="/ai-stories" className="text-gray-700 hover:text-purple-600 transition-colors">AI Stories</Link>
-            <Link to="/generator" className="text-gray-700 hover:text-purple-600 transition-colors">Generate</Link>
-            <Link to="/publish" className="text-gray-700 hover:text-purple-600 transition-colors">Publish</Link>
+            <Link to="/library" className="text-orange-600 font-bold px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">Каталог</Link>
+            <Link to="/ai-stories" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">ИИ Сказки</Link>
+            <Link to="/generator" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">Создать</Link>
           </nav>
-          <Button variant="outline">Sign In</Button>
+          <Button 
+            variant="outline" 
+            className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+          >
+            Войти
+          </Button>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filters */}
+          {/* Sidebar Filters with cartoon styling */}
           <div className="lg:w-1/4 space-y-6">
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-lg transform rotate-1">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Filters
+                <CardTitle className="flex items-center gap-2 text-purple-800" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  <Filter className="w-6 h-6 text-purple-600" />
+                  Фильтры ✨
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-5 h-5" />
                   <Input
-                    placeholder="Search stories..."
+                    placeholder="Поиск по названию..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 border-2 border-purple-200 rounded-full focus:border-purple-400 font-medium"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Genre</label>
+                  <label className="text-sm font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>Жанр</label>
                   <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select genre" />
+                    <SelectTrigger className="border-2 border-orange-200 rounded-full focus:border-orange-400 font-medium">
+                      <SelectValue placeholder="Выберите жанр" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-2 border-orange-200 rounded-2xl">
                       {genres.map((genre) => (
-                        <SelectItem key={genre} value={genre.toLowerCase()}>
+                        <SelectItem key={genre} value={genre.toLowerCase()} className="font-medium">
                           {genre}
                         </SelectItem>
                       ))}
@@ -151,14 +173,14 @@ const Library = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Language</label>
+                  <label className="text-sm font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>Язык</label>
                   <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select language" />
+                    <SelectTrigger className="border-2 border-green-200 rounded-full focus:border-green-400 font-medium">
+                      <SelectValue placeholder="Выберите язык" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-2 border-green-200 rounded-2xl">
                       {languages.map((language) => (
-                        <SelectItem key={language} value={language.toLowerCase()}>
+                        <SelectItem key={language} value={language.toLowerCase()} className="font-medium">
                           {language}
                         </SelectItem>
                       ))}
@@ -167,15 +189,15 @@ const Library = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Origin</label>
-                  <Select value={selectedOrigin} onValueChange={setSelectedOrigin}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select origin" />
+                  <label className="text-sm font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>Тип</label>
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger className="border-2 border-pink-200 rounded-full focus:border-pink-400 font-medium">
+                      <SelectValue placeholder="Выберите тип" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {origins.map((origin) => (
-                        <SelectItem key={origin} value={origin.toLowerCase()}>
-                          {origin}
+                    <SelectContent className="bg-white border-2 border-pink-200 rounded-2xl">
+                      {types.map((type) => (
+                        <SelectItem key={type} value={type.toLowerCase()} className="font-medium">
+                          {type}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -184,15 +206,15 @@ const Library = () => {
 
                 <Button 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full border-2 border-red-300 text-red-700 hover:bg-red-100 rounded-full font-bold transform hover:scale-105 transition-all"
                   onClick={() => {
                     setSearchTerm("");
-                    setSelectedGenre("all");
-                    setSelectedLanguage("all");
-                    setSelectedOrigin("all");
+                    setSelectedGenre("все");
+                    setSelectedLanguage("все");
+                    setSelectedType("все");
                   }}
                 >
-                  Clear Filters
+                  Очистить Фильтры
                 </Button>
               </CardContent>
             </Card>
@@ -201,37 +223,49 @@ const Library = () => {
           {/* Main Content */}
           <div className="lg:w-3/4">
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">Story Library</h2>
-              <p className="text-gray-600">
-                Showing {filteredStories.length} of {stories.length} stories
-              </p>
+              <h2 className="text-4xl font-bold text-purple-800 mb-2 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                Каталог Сказок 📚
+              </h2>
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-purple-200 p-4 inline-block">
+                <p className="text-purple-700 font-medium">
+                  Показано {filteredStories.length} из {stories.length} сказок
+                </p>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredStories.map((story) => (
-                <Card key={story.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm">
-                  <div className="relative overflow-hidden rounded-t-lg">
+              {filteredStories.map((story, index) => (
+                <Card key={story.id} className={`group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform ${index % 2 === 0 ? 'hover:rotate-1' : 'hover:-rotate-1'}`}>
+                  <div className="relative overflow-hidden">
                     <img 
                       src={story.cover} 
                       alt={story.title}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                     />
-                    <div className="absolute top-2 right-2">
-                      <Badge variant="secondary" className="bg-white/90">
-                        <Globe className="w-3 h-3 mr-1" />
-                        {story.origin}
+                    <div className="absolute top-3 right-3">
+                      <Badge variant="secondary" className={`border-2 font-bold rounded-full px-3 py-1 ${
+                        story.type === "ИИ" ? 'bg-purple-100 border-purple-300 text-purple-700' : 'bg-orange-100 border-orange-300 text-orange-700'
+                      }`}>
+                        {story.type}
                       </Badge>
                     </div>
+                    <div className="absolute top-3 left-3">
+                      <div className="bg-yellow-400 rounded-full p-2 border-2 border-yellow-500">
+                        <Star className="w-4 h-4 text-yellow-800 fill-current" />
+                      </div>
+                    </div>
                   </div>
-                  <CardHeader>
-                    <CardTitle className="text-lg group-hover:text-purple-600 transition-colors">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                       {story.title}
                     </CardTitle>
                     <CardDescription className="flex items-center justify-between mb-2">
-                      <Badge variant="outline">{story.genre}</Badge>
-                      <span className="text-sm text-gray-500">{story.language}</span>
+                      <Badge variant="outline" className="border-2 border-green-300 text-green-700 rounded-full font-medium">
+                        {story.genre}
+                      </Badge>
+                      <span className="text-sm text-purple-600 font-medium">{story.language}</span>
                     </CardDescription>
-                    <p className="text-sm text-gray-600 line-clamp-2">
+                    <p className="text-sm text-purple-700 line-clamp-2 font-medium">
                       {story.description}
                     </p>
                   </CardHeader>
@@ -239,19 +273,19 @@ const Library = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex gap-2">
                         <Link to={`/story/${story.id}`}>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium">
                             <BookOpen className="w-4 h-4 mr-1" />
-                            Read
+                            Читать
                           </Button>
                         </Link>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium">
                           <Play className="w-4 h-4 mr-1" />
-                          Listen
+                          Слушать
                         </Button>
                       </div>
-                      <div className="flex items-center text-gray-500">
-                        <Heart className="w-4 h-4 mr-1" />
-                        <span className="text-sm">{story.likes}</span>
+                      <div className="flex items-center text-pink-600">
+                        <Heart className="w-5 h-5 mr-1 fill-current" />
+                        <span className="text-sm font-bold">{story.likes}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -261,9 +295,13 @@ const Library = () => {
 
             {filteredStories.length === 0 && (
               <div className="text-center py-12">
-                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No stories found</h3>
-                <p className="text-gray-500">Try adjusting your filters or search terms</p>
+                <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-gray-200 p-8 mx-4 shadow-lg">
+                  <BookOpen className="w-20 h-20 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-600 mb-2" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                    Сказки не найдены 😔
+                  </h3>
+                  <p className="text-gray-500 font-medium">Попробуйте изменить фильтры или поисковый запрос</p>
+                </div>
               </div>
             )}
           </div>
