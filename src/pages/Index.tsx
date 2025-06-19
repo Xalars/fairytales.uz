@@ -2,24 +2,23 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import Header from "@/components/Header";
-import { useAuth } from "@/hooks/useAuth";
+import { useFairytales } from "@/hooks/useFairytales";
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { fairytales, loading } = useFairytales();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-orange-100 via-pink-50 to-purple-100 flex items-center justify-center">
-        <div className="text-2xl text-amber-800 font-bold">⏳ Загрузка...</div>
-      </div>
-    );
-  }
+  // Get emoji for different types and languages
+  const getEmoji = (type: string | null, language: string | null) => {
+    if (type === "ИИ" || type === "AI") return "🤖";
+    if (language === "uz") return "👨‍🎓";
+    if (language === "en") return "🧞‍♂️";
+    return "🐠";
+  };
+
+  const topFairytales = fairytales.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-100 via-pink-50 to-purple-100">
-      <Header />
-      
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 text-center">
         <div className="mb-8">
@@ -80,43 +79,45 @@ const Index = () => {
           🌟 Топ сказок
         </h2>
         
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            { title: "Золотая рыбка", emoji: "🐠", lang: "RU" },
-            { title: "Ҳазрати Алишер", emoji: "👨‍🎓", lang: "UZ" },
-            { title: "Magic Carpet", emoji: "🧞‍♂️", lang: "EN" }
-          ].map((story, index) => (
-            <Card key={index} className="rounded-3xl border-4 border-amber-300 transform hover:scale-105 transition-all duration-300 hover:rotate-1" style={{
-              background: 'linear-gradient(145deg, #fff8e1, #ffeaa7)',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6)'
-            }}>
-              <CardHeader className="text-center">
-                <div className="text-4xl mb-2">{story.emoji}</div>
-                <CardTitle className="text-xl font-bold text-amber-800" style={{fontFamily: 'Comic Sans MS, cursive'}}>
-                  {story.title}
-                </CardTitle>
-                <CardDescription className="text-amber-600">
-                  <span className="bg-amber-200 px-2 py-1 rounded-full text-xs font-semibold">
-                    {story.lang}
-                  </span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
-                <div className="flex gap-2 justify-center">
-                  <Button size="sm" variant="outline" className="rounded-xl border-2 border-blue-400 text-blue-600 hover:bg-blue-50">
-                    📖 Читать
-                  </Button>
-                  <Button size="sm" variant="outline" className="rounded-xl border-2 border-green-400 text-green-600 hover:bg-green-50">
-                    🎧 Слушать
-                  </Button>
-                  <Button size="sm" variant="outline" className="rounded-xl border-2 border-red-400 text-red-600 hover:bg-red-50">
-                    ❤️
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center">
+            <div className="text-2xl text-amber-800 font-bold">⏳ Загрузка...</div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-8">
+            {topFairytales.map((fairytale) => (
+              <Card key={fairytale.id} className="rounded-3xl border-4 border-amber-300 transform hover:scale-105 transition-all duration-300 hover:rotate-1" style={{
+                background: 'linear-gradient(145deg, #fff8e1, #ffeaa7)',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6)'
+              }}>
+                <CardHeader className="text-center">
+                  <div className="text-4xl mb-2">{getEmoji(fairytale.type, fairytale.language)}</div>
+                  <CardTitle className="text-xl font-bold text-amber-800" style={{fontFamily: 'Comic Sans MS, cursive'}}>
+                    {fairytale.title || 'Без названия'}
+                  </CardTitle>
+                  <CardDescription className="text-amber-600">
+                    <span className="bg-amber-200 px-2 py-1 rounded-full text-xs font-semibold">
+                      {fairytale.language?.toUpperCase() || 'RU'}
+                    </span>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <div className="flex gap-2 justify-center">
+                    <Button size="sm" variant="outline" className="rounded-xl border-2 border-blue-400 text-blue-600 hover:bg-blue-50">
+                      📖 Читать
+                    </Button>
+                    <Button size="sm" variant="outline" className="rounded-xl border-2 border-green-400 text-green-600 hover:bg-green-50">
+                      🎧 Слушать
+                    </Button>
+                    <Button size="sm" variant="outline" className="rounded-xl border-2 border-red-400 text-red-600 hover:bg-red-50">
+                      ❤️
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* New Stories Section */}
@@ -139,17 +140,6 @@ const Index = () => {
           </Button>
         </div>
       </div>
-
-      {/* User Status Message */}
-      {user && (
-        <div className="container mx-auto px-4 py-8">
-          <div className="bg-green-100 border-4 border-green-300 rounded-2xl p-6 text-center">
-            <p className="text-green-800 text-lg font-semibold">
-              🎉 Добро пожаловать, {user.email?.split('@')[0]}! Теперь вы можете сохранять любимые сказки и создавать собственные истории с ИИ.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
