@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Library from "./pages/Library";
 import Publish from "./pages/Publish";
 import Auth from "./pages/Auth";
+import AIFairytales from "./pages/AIFairytales";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/library" element={<Library />} />
           <Route path="/publish" element={<Publish />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/ai-fairytales" element={<AIFairytales />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

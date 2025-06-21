@@ -1,7 +1,8 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Play, BookOpen, Sparkles, Globe, Users, Star, Moon } from "lucide-react";
+import { Heart, Play, BookOpen, Sparkles, Globe, Star, Moon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
@@ -10,19 +11,17 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { fairytales, loading } = useFairytales();
 
-  // Take first 3 fairytales for featured section
+  // Take first 3 fairytales from preloaded Fairytales table for featured section
   const featuredStories = fairytales.slice(0, 3).map((fairytale, index) => ({
     id: fairytale.id,
     title: fairytale.title,
     genre: "Сказка",
     origin: "Узбекская",
-    language: "Русский",
-    likes: Math.floor(Math.random() * 200) + 50, // Random likes for now
+    language: fairytale.language || "Русский",
+    likes: Math.floor(Math.random() * 200) + 50,
     cover: `https://images.unsplash.com/photo-${index === 0 ? '1518709268805-4e9042af2176' : index === 1 ? '1544947950-fa07a98d237f' : '1578662996442-48f60103fc96'}?w=400&h=300&fit=crop`,
-    content: fairytale.content
+    content: fairytale.text_ru || fairytale.content || ''
   }));
-
-  const trendingGenres = ["Фантастика", "Приключения", "Романтика", "Поучительная", "Комедия", "Мистика"];
 
   const handleSignOut = async () => {
     await signOut();
@@ -64,6 +63,9 @@ const Index = () => {
             <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
               Опубликовать сказку
             </Link>
+            <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+              ИИ-сказки
+            </Link>
           </nav>
           {user ? (
             <Button 
@@ -74,14 +76,23 @@ const Index = () => {
               Выйти
             </Button>
           ) : (
-            <Link to="/auth">
-              <Button 
-                variant="outline" 
-                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-              >
-                Войти
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-3">
+              <Link to="/auth">
+                <Button 
+                  variant="outline" 
+                  className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                >
+                  Войти
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button 
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                >
+                  Зарегистрироваться
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       </header>
@@ -116,7 +127,7 @@ const Index = () => {
                 Начать читать
               </Button>
             </Link>
-            <Link to="/publish">
+            <Link to="/ai-fairytales">
               <Button 
                 size="lg" 
                 variant="outline" 
@@ -211,31 +222,6 @@ const Index = () => {
         )}
       </section>
 
-      {/* Trending Genres with cartoon styling */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="bg-white/70 backdrop-blur-sm rounded-3xl border-4 border-pink-200 mx-4 p-8 shadow-lg transform -rotate-1">
-          <h3 className="text-4xl font-bold text-purple-800 mb-8 text-center transform rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-            Популярные Жанры 🌟
-          </h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            {trendingGenres.map((genre, index) => (
-              <Badge 
-                key={genre} 
-                variant="secondary" 
-                className={`px-6 py-3 text-lg font-bold cursor-pointer transition-all transform hover:scale-110 rounded-full border-3 ${
-                  index % 3 === 0 ? 'bg-orange-100 border-orange-300 text-orange-700 hover:bg-orange-200' :
-                  index % 3 === 1 ? 'bg-purple-100 border-purple-300 text-purple-700 hover:bg-purple-200' :
-                  'bg-pink-100 border-pink-300 text-pink-700 hover:bg-pink-200'
-                }`}
-                style={{ fontFamily: 'Comic Sans MS, cursive' }}
-              >
-                {genre}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Stats Section with cartoon elements */}
       <section className="container mx-auto px-4 py-16">
         <div className="grid md:grid-cols-3 gap-8 text-center">
@@ -274,13 +260,14 @@ const Index = () => {
               <h4 className="font-bold mb-4 text-lg" style={{ fontFamily: 'Comic Sans MS, cursive' }}>Исследовать</h4>
               <ul className="space-y-2 text-purple-200">
                 <li><Link to="/library" className="hover:text-yellow-400 transition-colors font-medium">Каталог Сказок</Link></li>
-                <li><Link to="/publish" className="hover:text-yellow-400 transition-colors font-medium">Опубликовать</Link></li>
+                <li><Link to="/ai-fairytales" className="hover:text-yellow-400 transition-colors font-medium">ИИ-сказки</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold mb-4 text-lg" style={{ fontFamily: 'Comic Sans MS, cursive' }}>Создавать</h4>
               <ul className="space-y-2 text-purple-200">
                 <li><Link to="/publish" className="hover:text-yellow-400 transition-colors font-medium">Опубликовать сказку</Link></li>
+                <li><Link to="/ai-fairytales" className="hover:text-yellow-400 transition-colors font-medium">Генерировать ИИ сказку</Link></li>
               </ul>
             </div>
             <div>

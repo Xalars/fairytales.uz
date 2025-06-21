@@ -9,40 +9,32 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      fairytales: {
+      ai_fairytales: {
         Row: {
-          author_id: string | null
           content: string
           created_at: string
           id: string
+          parameters: Json | null
           title: string
           updated_at: string
         }
         Insert: {
-          author_id?: string | null
           content: string
           created_at?: string
           id?: string
+          parameters?: Json | null
           title: string
           updated_at?: string
         }
         Update: {
-          author_id?: string | null
           content?: string
           created_at?: string
           id?: string
+          parameters?: Json | null
           title?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fairytales_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       Fairytales: {
         Row: {
@@ -97,6 +89,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      user_fairytales: {
+        Row: {
+          author_id: string | null
+          content: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fairytales_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

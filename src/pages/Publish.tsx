@@ -15,8 +15,8 @@ const Publish = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
-  const { addFairytale } = useFairytales();
+  const { user, signOut } = useAuth();
+  const { addUserFairytale } = useFairytales();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -44,7 +44,7 @@ const Publish = () => {
 
     setLoading(true);
     try {
-      const { error } = await addFairytale(title.trim(), content.trim(), user.id);
+      const { error } = await addUserFairytale(title.trim(), content.trim(), user.id);
       
       if (error) {
         toast({
@@ -70,6 +70,10 @@ const Publish = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -98,6 +102,38 @@ const Publish = () => {
               <p className="text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
             </div>
           </Link>
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">Каталог</Link>
+            <Link to="/publish" className="text-orange-600 font-bold px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">Опубликовать сказку</Link>
+            <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">ИИ-сказки</Link>
+          </nav>
+          {user ? (
+            <Button 
+              onClick={handleSignOut}
+              variant="outline" 
+              className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+            >
+              Выйти
+            </Button>
+          ) : (
+            <div className="flex items-center space-x-3">
+              <Link to="/auth">
+                <Button 
+                  variant="outline" 
+                  className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                >
+                  Войти
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button 
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                >
+                  Зарегистрироваться
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 

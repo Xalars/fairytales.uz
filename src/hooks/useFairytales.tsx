@@ -5,27 +5,43 @@ import { supabase } from '@/integrations/supabase/client';
 export interface Fairytale {
   id: string;
   title: string;
-  content: string;
-  author_id: string | null;
+  content?: string;
+  text_ru?: string;
+  author_id?: string | null;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  language?: string;
+  type?: string;
 }
 
 export const useFairytales = () => {
   const [fairytales, setFairytales] = useState<Fairytale[]>([]);
+  const [userFairytales, setUserFairytales] = useState<Fairytale[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchFairytales = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('fairytales')
+      
+      // Fetch from original Fairytales table (preloaded stories)
+      const { data: fairytalesData, error: fairytalesError } = await supabase
+        .from('Fairytales')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setFairytales(data || []);
+      if (fairytalesError) throw fairytalesError;
+
+      // Fetch from user_fairytales table (user-generated stories)
+      const { data: userFairytalesData, error: userFairytalesError } = await supabase
+        .from('user_fairytales')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (userFairytalesError) throw userFairytalesError;
+
+      setFairytales(fairytalesData || []);
+      setUserFairytales(userFairytalesData || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -37,10 +53,10 @@ export const useFairytales = () => {
     fetchFairytales();
   }, []);
 
-  const addFairytale = async (title: string, content: string, authorId: string) => {
+  const addUserFairytale = async (title: string, content: string, authorId: string) => {
     try {
       const { data, error } = await supabase
-        .from('fairytales')
+        .from('user_fairytales')
         .insert([{ title, content, author_id: authorId }])
         .select()
         .single();
@@ -56,10 +72,11 @@ export const useFairytales = () => {
   };
 
   return {
-    fairytales,
+    fairytales, // Original preloaded fairytales
+    userFairytales, // User-generated fairytales
     loading,
     error,
-    addFairytale,
+    addUserFairytale,
     refetch: fetchFairytales,
   };
 };
