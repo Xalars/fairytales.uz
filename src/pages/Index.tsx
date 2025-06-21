@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,19 +8,44 @@ import { useFairytales } from "@/hooks/useFairytales";
 
 const Index = () => {
   const { user, signOut } = useAuth();
-  const { fairytales, loading } = useFairytales();
+  const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
 
-  // Take first 3 fairytales from preloaded Fairytales table for featured section
-  const featuredStories = fairytales.slice(0, 3).map((fairytale, index) => ({
-    id: fairytale.id,
-    title: fairytale.title,
-    genre: "Сказка",
-    origin: "Узбекская",
-    language: fairytale.language || "Русский",
-    likes: Math.floor(Math.random() * 200) + 50,
-    cover: `https://images.unsplash.com/photo-${index === 0 ? '1518709268805-4e9042af2176' : index === 1 ? '1544947950-fa07a98d237f' : '1578662996442-48f60103fc96'}?w=400&h=300&fit=crop`,
-    content: fairytale.text_ru || fairytale.content || ''
-  }));
+  // Combine all stories for featured section - take first 3 from each source
+  const featuredStories = [
+    ...fairytales.slice(0, 1).map((fairytale) => ({
+      id: fairytale.id,
+      title: fairytale.title,
+      genre: "Народная сказка",
+      origin: "Узбекская",
+      language: fairytale.language || "Русский",
+      likes: Math.floor(Math.random() * 200) + 50,
+      cover: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
+      content: fairytale.text_ru || fairytale.content || '',
+      source: 'preloaded'
+    })),
+    ...userFairytales.slice(0, 1).map((fairytale) => ({
+      id: fairytale.id,
+      title: fairytale.title,
+      genre: "Пользовательская",
+      origin: "Узбекская",
+      language: "Русский",
+      likes: Math.floor(Math.random() * 200) + 50,
+      cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
+      content: fairytale.content || '',
+      source: 'user_generated'
+    })),
+    ...aiFairytales.slice(0, 1).map((fairytale) => ({
+      id: fairytale.id,
+      title: fairytale.title,
+      genre: "ИИ-сказка",
+      origin: "Сгенерированная",
+      language: "Русский",
+      likes: Math.floor(Math.random() * 200) + 50,
+      cover: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
+      content: fairytale.content || '',
+      source: 'ai_generated'
+    }))
+  ];
 
   const handleSignOut = async () => {
     await signOut();
@@ -85,7 +109,7 @@ const Index = () => {
                   Войти
                 </Button>
               </Link>
-              <Link to="/auth">
+              <Link to="/auth?mode=signup">
                 <Button 
                   className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
                 >
@@ -141,7 +165,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Stories with real data */}
+      {/* Featured Stories with all sources */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-8">
           <h3 className="text-4xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
@@ -226,8 +250,8 @@ const Index = () => {
       <section className="container mx-auto px-4 py-16">
         <div className="grid md:grid-cols-3 gap-8 text-center">
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-purple-200 p-8 shadow-lg transform rotate-1 hover:scale-105 transition-all">
-            <div className="text-5xl font-bold text-purple-600 mb-2" style={{ fontFamily: 'Comic Sans MS, cursive' }}>{fairytales.length}+</div>
-            <div className="text-purple-700 font-medium text-lg">Узбекских Сказок</div>
+            <div className="text-5xl font-bold text-purple-600 mb-2" style={{ fontFamily: 'Comic Sans MS, cursive' }}>{fairytales.length + userFairytales.length + aiFairytales.length}+</div>
+            <div className="text-purple-700 font-medium text-lg">Сказок</div>
             <Star className="w-8 h-8 text-yellow-400 fill-current mx-auto mt-2" />
           </div>
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-8 shadow-lg transform -rotate-1 hover:scale-105 transition-all">

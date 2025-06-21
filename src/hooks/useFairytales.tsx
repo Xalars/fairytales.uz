@@ -14,9 +14,19 @@ export interface Fairytale {
   type?: string;
 }
 
+export interface AIFairytale {
+  id: string;
+  title: string;
+  content: string;
+  parameters?: any;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useFairytales = () => {
   const [fairytales, setFairytales] = useState<Fairytale[]>([]);
   const [userFairytales, setUserFairytales] = useState<Fairytale[]>([]);
+  const [aiFairytales, setAiFairytales] = useState<AIFairytale[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +49,19 @@ export const useFairytales = () => {
         .order('created_at', { ascending: false });
 
       if (userFairytalesError) throw userFairytalesError;
+
+      // Fetch from ai_fairytales table (AI-generated stories)
+      const { data: aiFairytalesData, error: aiFairytalesError } = await supabase
+        .from('ai_fairytales')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (aiFairytalesError) {
+        console.log('AI fairytales table might not exist yet:', aiFairytalesError);
+        setAiFairytales([]);
+      } else {
+        setAiFairytales(aiFairytalesData || []);
+      }
 
       setFairytales(fairytalesData || []);
       setUserFairytales(userFairytalesData || []);
@@ -71,12 +94,32 @@ export const useFairytales = () => {
     }
   };
 
+  const addAIFairytale = async (title: string, content: string, parameters?: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('ai_fairytales')
+        .insert([{ title, content, parameters }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Refresh the list
+      await fetchFairytales();
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : 'An error occurred' };
+    }
+  };
+
   return {
     fairytales, // Original preloaded fairytales
     userFairytales, // User-generated fairytales
+    aiFairytales, // AI-generated fairytales
     loading,
     error,
     addUserFairytale,
+    addAIFairytale,
     refetch: fetchFairytales,
   };
 };

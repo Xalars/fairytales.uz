@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { useFairytales } from "@/hooks/useFairytales";
 
 const Library = () => {
   const { user, signOut } = useAuth();
-  const { fairytales, userFairytales, loading } = useFairytales();
+  const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
   
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,19 +45,19 @@ const Library = () => {
       })));
     }
     
-    // TODO: Add AI-generated fairytales when available
-    // if (showAIGenerated) {
-    //   stories.push(...aiFairytales.map(fairytale => ({
-    //     id: fairytale.id,
-    //     title: fairytale.title,
-    //     content: fairytale.content || '',
-    //     type: 'ИИ-сказки',
-    //     source: 'ai_generated'
-    //   })));
-    // }
+    // Add AI-generated fairytales
+    if (showAIGenerated) {
+      stories.push(...aiFairytales.map(fairytale => ({
+        id: fairytale.id,
+        title: fairytale.title,
+        content: fairytale.content || '',
+        type: 'ИИ-сказки',
+        source: 'ai_generated'
+      })));
+    }
     
     return stories;
-  }, [fairytales, userFairytales, showPreloaded, showUserGenerated, showAIGenerated]);
+  }, [fairytales, userFairytales, aiFairytales, showPreloaded, showUserGenerated, showAIGenerated]);
 
   // Filter stories based on search term
   const filteredStories = useMemo(() => {
@@ -126,7 +125,7 @@ const Library = () => {
                   Войти
                 </Button>
               </Link>
-              <Link to="/auth">
+              <Link to="/auth?mode=signup">
                 <Button 
                   className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
                 >
@@ -162,46 +161,46 @@ const Library = () => {
               />
             </div>
 
-            {/* Filter Checkboxes */}
+            {/* Filter Checkboxes with improved styling */}
             <div className="flex flex-wrap gap-6 items-center">
               <div className="flex items-center space-x-2">
                 <Filter className="w-5 h-5 text-purple-600" />
                 <span className="font-medium text-purple-700">Фильтры:</span>
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-purple-50 rounded-full px-4 py-2 border-2 border-purple-200 hover:border-purple-400 transition-colors">
                 <Checkbox
                   id="preloaded"
                   checked={showPreloaded}
                   onCheckedChange={handlePreloadedChange}
-                  className="border-2 border-purple-400"
+                  className="border-2 border-purple-400 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 rounded-md"
                 />
-                <label htmlFor="preloaded" className="text-sm font-medium text-purple-700 cursor-pointer">
-                  Народные сказки
+                <label htmlFor="preloaded" className="text-sm font-bold text-purple-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  🏰 Народные сказки
                 </label>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-orange-50 rounded-full px-4 py-2 border-2 border-orange-200 hover:border-orange-400 transition-colors">
                 <Checkbox
                   id="user-generated"
                   checked={showUserGenerated}
                   onCheckedChange={handleUserGeneratedChange}
-                  className="border-2 border-orange-400"
+                  className="border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500 rounded-md"
                 />
-                <label htmlFor="user-generated" className="text-sm font-medium text-orange-700 cursor-pointer">
-                  Опубликованные пользователями
+                <label htmlFor="user-generated" className="text-sm font-bold text-orange-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  ✍️ Опубликованные пользователями
                 </label>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-green-50 rounded-full px-4 py-2 border-2 border-green-200 hover:border-green-400 transition-colors">
                 <Checkbox
                   id="ai-generated"
                   checked={showAIGenerated}
                   onCheckedChange={handleAIGeneratedChange}
-                  className="border-2 border-green-400"
+                  className="border-2 border-green-400 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 rounded-md"
                 />
-                <label htmlFor="ai-generated" className="text-sm font-medium text-green-700 cursor-pointer">
-                  ИИ-сказки
+                <label htmlFor="ai-generated" className="text-sm font-bold text-green-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  🤖 ИИ-сказки
                 </label>
               </div>
             </div>
