@@ -15,7 +15,9 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          image_url: string | null
           language: string | null
+          like_count: number | null
           parameters: Json | null
           title: string
           updated_at: string
@@ -25,7 +27,9 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          image_url?: string | null
           language?: string | null
+          like_count?: number | null
           parameters?: Json | null
           title: string
           updated_at?: string
@@ -35,7 +39,9 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           language?: string | null
+          like_count?: number | null
           parameters?: Json | null
           title?: string
           updated_at?: string
@@ -47,7 +53,9 @@ export type Database = {
           audio_url: string | null
           created_at: string | null
           id: string
+          image_url: string | null
           language: string | null
+          like_count: number | null
           text_ru: string | null
           title: string | null
           type: string | null
@@ -56,7 +64,9 @@ export type Database = {
           audio_url?: string | null
           created_at?: string | null
           id: string
+          image_url?: string | null
           language?: string | null
+          like_count?: number | null
           text_ru?: string | null
           title?: string | null
           type?: string | null
@@ -65,10 +75,36 @@ export type Database = {
           audio_url?: string | null
           created_at?: string | null
           id?: string
+          image_url?: string | null
           language?: string | null
+          like_count?: number | null
           text_ru?: string | null
           title?: string | null
           type?: string | null
+        }
+        Relationships: []
+      }
+      likes: {
+        Row: {
+          created_at: string
+          fairytale_id: string
+          fairytale_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fairytale_id: string
+          fairytale_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fairytale_id?: string
+          fairytale_type?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -106,6 +142,8 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          image_url: string | null
+          like_count: number | null
           moderated_content: string | null
           original_content: string | null
           status: string | null
@@ -118,6 +156,8 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          image_url?: string | null
+          like_count?: number | null
           moderated_content?: string | null
           original_content?: string | null
           status?: string | null
@@ -130,6 +170,8 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          image_url?: string | null
+          like_count?: number | null
           moderated_content?: string | null
           original_content?: string | null
           status?: string | null

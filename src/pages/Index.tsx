@@ -5,10 +5,12 @@ import { Heart, Play, BookOpen, Sparkles, Globe, Star, Moon } from "lucide-react
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
+import { useLikes } from "@/hooks/useLikes";
 
 const Index = () => {
   const { user, signOut } = useAuth();
   const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
+  const { toggleLike, isLiked } = useLikes();
 
   // Combine all stories for featured section - take first 3 from each source
   const featuredStories = [
@@ -18,8 +20,8 @@ const Index = () => {
       genre: "Народная сказка",
       origin: "Узбекская",
       language: fairytale.language || "Русский",
-      likes: Math.floor(Math.random() * 200) + 50,
-      cover: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
+      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
+      cover: fairytale.image_url || "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
       content: fairytale.text_ru || fairytale.content || '',
       source: 'preloaded'
     })),
@@ -29,8 +31,8 @@ const Index = () => {
       genre: "Пользовательская",
       origin: "Узбекская",
       language: "Русский",
-      likes: Math.floor(Math.random() * 200) + 50,
-      cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
+      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
+      cover: fairytale.image_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
       content: fairytale.content || '',
       source: 'user_generated'
     })),
@@ -40,8 +42,8 @@ const Index = () => {
       genre: "ИИ-сказка",
       origin: "Сгенерированная",
       language: "Русский",
-      likes: Math.floor(Math.random() * 200) + 50,
-      cover: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
+      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
+      cover: fairytale.image_url || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
       content: fairytale.content || '',
       source: 'ai_generated'
     }))
@@ -49,6 +51,15 @@ const Index = () => {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleLike = async (storyId: string, storySource: string) => {
+    if (!user) return;
+    
+    const fairytaleType = storySource === 'preloaded' ? 'folk' : 
+                         storySource === 'user_generated' ? 'user' : 'ai';
+    
+    await toggleLike(storyId, fairytaleType);
   };
 
   return (
@@ -225,9 +236,21 @@ const Index = () => {
                         Слушать
                       </Button>
                     </div>
-                    <div className="flex items-center text-pink-600">
-                      <Heart className="w-5 h-5 mr-1 fill-current" />
-                      <span className="text-sm font-bold">{story.likes}</span>
+                    <div className="flex items-center gap-2">
+                      {user && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleLike(story.id, story.source)}
+                          className="text-pink-600 hover:text-pink-700 hover:bg-pink-50 rounded-full p-2"
+                        >
+                          <Heart className={`w-4 h-4 ${isLiked(story.id, story.source === 'preloaded' ? 'folk' : story.source === 'user_generated' ? 'user' : 'ai') ? 'fill-current' : ''}`} />
+                        </Button>
+                      )}
+                      <div className="flex items-center text-pink-600">
+                        <Heart className="w-4 h-4 mr-1 fill-current" />
+                        <span className="text-sm font-bold">{story.likes}</span>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

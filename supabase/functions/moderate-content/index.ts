@@ -11,41 +11,69 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const { content } = await req.json();
-
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+    
+    if (!content) {
+      throw new Error('Content is required for moderation');
     }
 
-    // First, check if content is appropriate
-    const moderationResponse = await fetch('https://api.openai.com/v1/moderations', {
+    // First check: Content moderation
+    const moderationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        input: content,
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a strict content moderator for children's fairy tales. Analyze the following story and determine if it's appropriate for children aged 3-12. 
+
+            REJECT if the story contains:
+            - Any violence, death, or scary content
+            - Inappropriate language or adult themes
+            - Nonsensical or incoherent content
+            - Morally questionable messages
+            - Any content not suitable for young children
+
+            ACCEPT only if the story is:
+            - Child-friendly and educational
+            - Coherent and well-structured
+            - Morally positive
+            - Age-appropriate for young children
+
+            Respond with ONLY "APPROVED" or "REJECTED" followed by a brief reason.`
+          },
+          {
+            role: 'user',
+            content: content
+          }
+        ],
       }),
     });
 
     const moderationData = await moderationResponse.json();
-    const isFlagged = moderationData.results[0]?.flagged || false;
-
-    if (isFlagged) {
+    const moderationResult = moderationData.choices[0].message.content;
+    
+    const isApproved = moderationResult.startsWith('APPROVED');
+    
+    if (!isApproved) {
       return new Response(JSON.stringify({ 
-        isAppropriate: false,
-        reason: 'Content flagged by moderation system'
+        isAppropriate: false, 
+        reason: 'В сказке содержится неподобающий контент',
+        moderatedContent: null 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // If appropriate, improve the content
+    // Second step: Grammar and style improvement
     const improvementResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -55,35 +83,41 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { 
-            role: 'system', 
-            content: 'Ты редактор детских сказок. Улучши грамматику, стиль и сделай текст более подходящим для детей. Сохрани оригинальную историю и смысл. Если текст уже хорош, верни его без изменений. Отвечай только исправленным текстом без дополнительных комментариев.'
+          {
+            role: 'system',
+            content: `You are an expert editor for children's fairy tales. Improve the following story by:
+            - Correcting grammar and spelling errors
+            - Enhancing the narrative style to make it more engaging for children
+            - Making the language more vivid and child-friendly
+            - Ensuring the story flows well and is easy to read
+            - Keeping the original plot and meaning intact
+            
+            Return only the improved story text, nothing else.`
           },
-          { role: 'user', content: content }
+          {
+            role: 'user',
+            content: content
+          }
         ],
-        temperature: 0.3,
-        max_tokens: 2000,
       }),
     });
 
     const improvementData = await improvementResponse.json();
     const improvedContent = improvementData.choices[0].message.content;
 
-    // Check if content was actually improved
-    const wasImproved = improvedContent.length !== content.length || improvedContent !== content;
-
     return new Response(JSON.stringify({ 
-      isAppropriate: true,
-      moderatedContent: wasImproved ? improvedContent : null,
-      wasImproved
+      isAppropriate: true, 
+      moderatedContent: improvedContent,
+      message: 'Мы немного улучшили сказку. Как вам?'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
     console.error('Error in moderate-content function:', error);
     return new Response(JSON.stringify({ 
-      isAppropriate: false,
-      error: error.message 
+      isAppropriate: false, 
+      error: 'Ошибка при проверке содержания' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
