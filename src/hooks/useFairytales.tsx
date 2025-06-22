@@ -12,6 +12,9 @@ export interface Fairytale {
   updated_at?: string;
   language?: string;
   type?: string;
+  audio_url?: string;
+  image_url?: string;
+  like_count?: number;
 }
 
 export interface AIFairytale {
@@ -21,6 +24,9 @@ export interface AIFairytale {
   parameters?: any;
   created_at: string;
   updated_at: string;
+  audio_url?: string;
+  image_url?: string;
+  like_count?: number;
 }
 
 export const useFairytales = () => {
@@ -34,21 +40,38 @@ export const useFairytales = () => {
     try {
       setLoading(true);
       
-      // Fetch from original Fairytales table (preloaded stories)
+      // Fetch from original Fairytales table (folk tales)
+      console.log('Fetching folk tales from Fairytales table...');
       const { data: fairytalesData, error: fairytalesError } = await supabase
         .from('Fairytales')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (fairytalesError) throw fairytalesError;
+      if (fairytalesError) {
+        console.error('Error fetching folk tales:', fairytalesError);
+        throw fairytalesError;
+      }
+
+      console.log('Folk tales fetched:', fairytalesData);
+      
+      // Process folk tales data to ensure consistent structure
+      const processedFairytales = (fairytalesData || []).map(tale => ({
+        ...tale,
+        content: tale.text_ru || tale.content || '', // Use text_ru as primary content
+        like_count: tale.like_count || 0
+      }));
 
       // Fetch from user_fairytales table (user-generated stories)
       const { data: userFairytalesData, error: userFairytalesError } = await supabase
         .from('user_fairytales')
         .select('*')
+        .eq('status', 'published') // Only show published stories
         .order('created_at', { ascending: false });
 
-      if (userFairytalesError) throw userFairytalesError;
+      if (userFairytalesError) {
+        console.error('Error fetching user fairytales:', userFairytalesError);
+        throw userFairytalesError;
+      }
 
       // Fetch from ai_fairytales table (AI-generated stories)
       const { data: aiFairytalesData, error: aiFairytalesError } = await supabase
@@ -57,15 +80,23 @@ export const useFairytales = () => {
         .order('created_at', { ascending: false });
 
       if (aiFairytalesError) {
-        console.log('AI fairytales table might not exist yet:', aiFairytalesError);
+        console.error('Error fetching AI fairytales:', aiFairytalesError);
         setAiFairytales([]);
       } else {
         setAiFairytales(aiFairytalesData || []);
       }
 
-      setFairytales(fairytalesData || []);
+      setFairytales(processedFairytales);
       setUserFairytales(userFairytalesData || []);
+      
+      console.log('All data fetched successfully:', {
+        folkTales: processedFairytales.length,
+        userTales: (userFairytalesData || []).length,
+        aiTales: (aiFairytalesData || []).length
+      });
+      
     } catch (err) {
+      console.error('Error in fetchFairytales:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
@@ -80,7 +111,7 @@ export const useFairytales = () => {
     try {
       const { data, error } = await supabase
         .from('user_fairytales')
-        .insert([{ title, content, author_id: authorId }])
+        .insert([{ title, content, author_id: authorId, status: 'published' }])
         .select()
         .single();
 
@@ -113,7 +144,7 @@ export const useFairytales = () => {
   };
 
   return {
-    fairytales, // Original preloaded fairytales
+    fairytales, // Folk tales from Fairytales table
     userFairytales, // User-generated fairytales
     aiFairytales, // AI-generated fairytales
     loading,

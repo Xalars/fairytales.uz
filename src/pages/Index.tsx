@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,44 +13,47 @@ const Index = () => {
 
   // Combine all stories for featured section - take first 3 from each source
   const featuredStories = [
-    ...fairytales.slice(0, 1).map((fairytale) => ({
+    ...fairytales.slice(0, 2).map((fairytale) => ({
       id: fairytale.id,
-      title: fairytale.title,
+      title: fairytale.title || 'Народная сказка',
       genre: "Народная сказка",
       origin: "Узбекская",
       language: fairytale.language || "Русский",
-      likes: Math.floor(Math.random() * 200) + 50,
-      cover: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
-      content: fairytale.text_ru || fairytale.content || '',
+      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
+      cover: fairytale.image_url || "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
+      content: fairytale.content || fairytale.text_ru || '',
       source: 'preloaded'
     })),
     ...userFairytales.slice(0, 1).map((fairytale) => ({
       id: fairytale.id,
-      title: fairytale.title,
+      title: fairytale.title || 'Пользовательская сказка',
       genre: "Пользовательская",
       origin: "Узбекская",
       language: "Русский",
-      likes: Math.floor(Math.random() * 200) + 50,
-      cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
+      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
+      cover: fairytale.image_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
       content: fairytale.content || '',
       source: 'user_generated'
     })),
     ...aiFairytales.slice(0, 1).map((fairytale) => ({
       id: fairytale.id,
-      title: fairytale.title,
+      title: fairytale.title || 'ИИ-сказка',
       genre: "ИИ-сказка",
       origin: "Сгенерированная",
       language: "Русский",
-      likes: Math.floor(Math.random() * 200) + 50,
-      cover: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
+      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
+      cover: fairytale.image_url || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
       content: fairytale.content || '',
       source: 'ai_generated'
     }))
-  ];
+  ].filter(story => story.content); // Only show stories with content
 
   const handleSignOut = async () => {
     await signOut();
   };
+
+  console.log('Index page - Featured stories:', featuredStories.length);
+  console.log('Folk tales available:', fairytales.length);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 relative overflow-hidden">
@@ -181,7 +185,7 @@ const Index = () => {
         ) : featuredStories.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredStories.map((story) => (
-              <Card key={story.id} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
+              <Card key={`${story.source}-${story.id}`} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
                 <div className="relative overflow-hidden">
                   <img 
                     src={story.cover} 
@@ -236,7 +240,7 @@ const Index = () => {
           </div>
         ) : (
           <div className="text-center">
-            <p className="text-purple-700 font-medium text-lg">Пока нет опубликованных сказок</p>
+            <p className="text-purple-700 font-medium text-lg">Загрузка сказок...</p>
             <Link to="/publish">
               <Button className="mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold">
                 Опубликовать первую сказку

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { useFairytales } from "@/hooks/useFairytales";
 
 const Library = () => {
   const { user, signOut } = useAuth();
-  const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
+  const { fairytales, userFairytales, aiFairytales, loading, error } = useFairytales();
   
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,39 +24,64 @@ const Library = () => {
   const allStories = useMemo(() => {
     const stories = [];
     
-    // Add preloaded fairytales
+    console.log('Building stories list:', { 
+      fairytales: fairytales.length, 
+      userFairytales: userFairytales.length, 
+      aiFairytales: aiFairytales.length,
+      showPreloaded,
+      showUserGenerated,
+      showAIGenerated
+    });
+    
+    // Add folk tales (preloaded fairytales)
     if (showPreloaded) {
-      stories.push(...fairytales.map(fairytale => ({
+      const folkStories = fairytales.map(fairytale => ({
         id: fairytale.id,
-        title: fairytale.title,
-        content: fairytale.text_ru || fairytale.content || '',
+        title: fairytale.title || 'Без названия',
+        content: fairytale.content || fairytale.text_ru || '',
         type: 'Народные сказки',
-        source: 'preloaded'
-      })));
+        source: 'preloaded',
+        image_url: fairytale.image_url,
+        audio_url: fairytale.audio_url,
+        like_count: fairytale.like_count || 0
+      }));
+      stories.push(...folkStories);
+      console.log('Added folk stories:', folkStories.length);
     }
     
     // Add user-generated fairytales
     if (showUserGenerated) {
-      stories.push(...userFairytales.map(fairytale => ({
+      const userStories = userFairytales.map(fairytale => ({
         id: fairytale.id,
-        title: fairytale.title,
+        title: fairytale.title || 'Без названия',
         content: fairytale.content || '',
         type: 'Опубликованные пользователями',
-        source: 'user_generated'
-      })));
+        source: 'user_generated',
+        image_url: fairytale.image_url,
+        audio_url: fairytale.audio_url,
+        like_count: fairytale.like_count || 0
+      }));
+      stories.push(...userStories);
+      console.log('Added user stories:', userStories.length);
     }
     
     // Add AI-generated fairytales
     if (showAIGenerated) {
-      stories.push(...aiFairytales.map(fairytale => ({
+      const aiStories = aiFairytales.map(fairytale => ({
         id: fairytale.id,
-        title: fairytale.title,
+        title: fairytale.title || 'Без названия',
         content: fairytale.content || '',
         type: 'ИИ-сказки',
-        source: 'ai_generated'
-      })));
+        source: 'ai_generated',
+        image_url: fairytale.image_url,
+        audio_url: fairytale.audio_url,
+        like_count: fairytale.like_count || 0
+      }));
+      stories.push(...aiStories);
+      console.log('Added AI stories:', aiStories.length);
     }
     
+    console.log('Total stories:', stories.length);
     return stories;
   }, [fairytales, userFairytales, aiFairytales, showPreloaded, showUserGenerated, showAIGenerated]);
 
@@ -81,6 +107,11 @@ const Library = () => {
   const handleAIGeneratedChange = (checked: boolean | "indeterminate") => {
     setShowAIGenerated(checked === true);
   };
+
+  // Show error if there's an issue
+  if (error) {
+    console.error('Library error:', error);
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100">
@@ -207,6 +238,15 @@ const Library = () => {
           </div>
         </div>
 
+        {/* Debug info in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-4 bg-gray-100 rounded">
+            <p>Debug: Loading: {loading.toString()}, Error: {error || 'none'}</p>
+            <p>Folk tales: {fairytales.length}, User tales: {userFairytales.length}, AI tales: {aiFairytales.length}</p>
+            <p>Filtered stories: {filteredStories.length}</p>
+          </div>
+        )}
+
         {/* Stories Grid */}
         {loading ? (
           <div className="text-center py-12">
@@ -215,10 +255,14 @@ const Library = () => {
         ) : filteredStories.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredStories.map((story) => (
-              <Card key={story.id} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
+              <Card key={`${story.source}-${story.id}`} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
                 <div className="relative overflow-hidden">
                   <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
-                    <BookOpen className="w-16 h-16 text-white opacity-80" />
+                    {story.image_url ? (
+                      <img src={story.image_url} alt={story.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <BookOpen className="w-16 h-16 text-white opacity-80" />
+                    )}
                   </div>
                   <div className="absolute top-3 right-3">
                     <Badge 
@@ -240,7 +284,7 @@ const Library = () => {
                     {story.title}
                   </CardTitle>
                   <CardDescription className="text-purple-600 font-medium">
-                    {story.content.substring(0, 100)}...
+                    {story.content ? story.content.substring(0, 100) + '...' : 'Содержание недоступно'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -257,7 +301,7 @@ const Library = () => {
                     </div>
                     <div className="flex items-center text-pink-600">
                       <Heart className="w-5 h-5 mr-1 fill-current" />
-                      <span className="text-sm font-bold">{Math.floor(Math.random() * 200) + 50}</span>
+                      <span className="text-sm font-bold">{story.like_count}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -274,6 +318,11 @@ const Library = () => {
               {searchTerm && (
                 <p className="text-purple-500 text-sm">
                   Попробуйте изменить поисковый запрос или настройки фильтра
+                </p>
+              )}
+              {error && (
+                <p className="text-red-500 text-sm mt-2">
+                  Ошибка загрузки: {error}
                 </p>
               )}
             </div>
