@@ -1,145 +1,98 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, BookOpen, Sparkles, Save, Loader2 } from "lucide-react";
+import { BookOpen, Star, Sparkles, Wand2, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const AIFairytales = () => {
+  const [protagonist, setProtagonist] = useState("");
+  const [setting, setSetting] = useState("");
+  const [theme, setTheme] = useState("");
+  const [length, setLength] = useState("medium");
+  const [language, setLanguage] = useState("russian");
+  const [loading, setLoading] = useState(false);
+  const [generatedStory, setGeneratedStory] = useState<{title: string, content: string, parameters?: any} | null>(null);
+  const [saving, setSaving] = useState(false);
+  
   const { user, signOut } = useAuth();
   const { addAIFairytale } = useFairytales();
   const { toast } = useToast();
-  
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [generatedFairytale, setGeneratedFairytale] = useState<{
-    title: string;
-    content: string;
-    language: string;
-  } | null>(null);
 
-  // Form state
-  const [theme, setTheme] = useState('');
-  const [character, setCharacter] = useState('');
-  const [location, setLocation] = useState('');
-  const [moral, setMoral] = useState('');
-  const [language, setLanguage] = useState('russian');
-  const [tone, setTone] = useState('magical');
-
-  const handleGenerate = async () => {
-    if (!theme.trim()) {
+  const handleGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!protagonist.trim() || !setting.trim() || !theme.trim()) {
       toast({
         title: "Ошибка",
-        description: "Пожалуйста, укажите тему сказки",
+        description: "Пожалуйста, заполните все поля",
         variant: "destructive",
       });
       return;
     }
 
-    setIsGenerating(true);
-    
+    setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-fairytale', {
         body: {
+          protagonist: protagonist.trim(),
+          setting: setting.trim(),
           theme: theme.trim(),
-          character: character.trim(),
-          location: location.trim(),
-          moral: moral.trim(),
-          language,
-          tone
+          length,
+          language
         }
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setGeneratedFairytale({
-        title: data.title,
-        content: data.content,
-        language: data.language || language
-      });
-
+      setGeneratedStory(data);
       toast({
-        title: "Успех!",
-        description: "Сказка успешно сгенерирована",
+        title: "Успешно!",
+        description: "Сказка сгенерирована! Вы можете её сохранить.",
       });
-
     } catch (err) {
-      console.error('Generation error:', err);
       toast({
         title: "Ошибка",
-        description: err instanceof Error ? err.message : "Ошибка при генерации сказки",
+        description: err.message || "Что-то пошло не так при генерации сказки",
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      setLoading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!generatedFairytale || !user) {
-      toast({
-        title: "Ошибка",
-        description: "Нет сказки для сохранения или пользователь не авторизован",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-
+    if (!generatedStory) return;
+    
+    setSaving(true);
     try {
-      const result = await addAIFairytale(
-        generatedFairytale.title,
-        generatedFairytale.content,
-        {
-          theme,
-          character,
-          location,
-          moral,
-          tone,
-          generated_by: user.id
-        },
-        generatedFairytale.language
+      const { error } = await addAIFairytale(
+        generatedStory.title,
+        generatedStory.content,
+        generatedStory.parameters
       );
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
+      if (error) throw new Error(error);
 
       toast({
-        title: "Успех!",
-        description: "Сказка успешно сохранена",
+        title: "Сохранено!",
+        description: "Сказка добавлена в каталог ИИ-сказок",
       });
-
-      // Reset form
-      setGeneratedFairytale(null);
-      setTheme('');
-      setCharacter('');
-      setLocation('');
-      setMoral('');
-
     } catch (err) {
-      console.error('Save error:', err);
       toast({
         title: "Ошибка",
-        description: err instanceof Error ? err.message : "Ошибка при сохранении сказки",
+        description: "Не удалось сохранить сказку",
         variant: "destructive",
       });
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   };
 
@@ -148,12 +101,24 @@ const AIFairytales = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-10 left-10 opacity-20">
+        <div className="w-20 h-12 bg-white rounded-full"></div>
+        <div className="w-16 h-10 bg-white rounded-full -mt-6 ml-4"></div>
+      </div>
+      <div className="absolute top-20 right-20 opacity-30">
+        <Star className="w-8 h-8 text-yellow-400 fill-current" />
+      </div>
+
       {/* Header */}
       <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
-            <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
+            <div className="relative">
+              <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
+              <Star className="absolute -top-1 -right-1 h-4 w-4 text-yellow-400 fill-current" />
+            </div>
             <div>
               <h1 className="text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                 fAIrytales.uz
@@ -162,15 +127,9 @@ const AIFairytales = () => {
             </div>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-              Каталог
-            </Link>
-            <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-              Опубликовать сказку
-            </Link>
-            <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">
-              ИИ-сказки
-            </Link>
+            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">Каталог</Link>
+            <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">Опубликовать сказку</Link>
+            <Link to="/ai-fairytales" className="text-orange-600 font-bold px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">ИИ-сказки</Link>
           </nav>
           {user ? (
             <Button 
@@ -181,213 +140,186 @@ const AIFairytales = () => {
               Выйти
             </Button>
           ) : (
-            <div className="flex items-center space-x-3">
-              <Link to="/auth">
-                <Button 
-                  variant="outline" 
-                  className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                >
-                  Войти
-                </Button>
-              </Link>
-              <Link to="/auth?mode=signup">
-                <Button 
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                >
-                  Зарегистрироваться
-                </Button>
-              </Link>
-            </div>
+            <Link to="/auth">
+              <Button 
+                variant="outline" 
+                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+              >
+                Войти
+              </Button>
+            </Link>
           )}
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h2 className="text-5xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-            Генератор Сказок с ИИ ✨
-          </h2>
-          <div className="w-32 h-2 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full mx-auto"></div>
-        </div>
-
-        {!user ? (
-          <div className="text-center py-12">
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-8 shadow-lg max-w-md mx-auto">
-              <Wand2 className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-              <p className="text-purple-700 font-medium text-lg mb-4">
-                Войдите в систему, чтобы создавать сказки с ИИ
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-5xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+              ИИ-сказки ✨
+            </h2>
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-4 mx-4 shadow-lg transform rotate-1">
+              <p className="text-xl text-purple-700 font-medium">
+                Создайте уникальную сказку с помощью искусственного интеллекта!
               </p>
-              <Link to="/auth">
-                <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold">
-                  Войти
-                </Button>
-              </Link>
             </div>
           </div>
-        ) : (
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Generation Form */}
-            <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-lg">
+
+          {!generatedStory ? (
+            <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-2xl transform -rotate-1">
               <CardHeader>
-                <CardTitle className="text-2xl font-bold text-purple-700 flex items-center" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                  <Wand2 className="w-6 h-6 mr-2" />
-                  Создайте свою сказку
-                </CardTitle>
-                <CardDescription className="text-purple-600 font-medium">
-                  Заполните поля ниже, и ИИ создаст для вас уникальную сказку
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-purple-700 font-bold">Тема сказки *</label>
-                  <Input
-                    placeholder="Например: дружба, храбрость, доброта..."
-                    value={theme}
-                    onChange={(e) => setTheme(e.target.value)}
-                    className="border-2 border-purple-300 rounded-full py-3 focus:border-orange-400"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-purple-700 font-bold">Главный герой</label>
-                  <Input
-                    placeholder="Например: маленькая принцесса, мудрый дракон..."
-                    value={character}
-                    onChange={(e) => setCharacter(e.target.value)}
-                    className="border-2 border-purple-300 rounded-full py-3 focus:border-orange-400"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-purple-700 font-bold">Место действия</label>
-                  <Input
-                    placeholder="Например: волшебный лес, далекое королевство..."
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="border-2 border-purple-300 rounded-full py-3 focus:border-orange-400"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-purple-700 font-bold">Мораль сказки</label>
-                  <Textarea
-                    placeholder="Чему должна научить эта сказка?"
-                    value={moral}
-                    onChange={(e) => setMoral(e.target.value)}
-                    className="border-2 border-purple-300 rounded-2xl focus:border-orange-400"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-purple-700 font-bold">Язык</label>
-                    <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger className="border-2 border-purple-300 rounded-full focus:border-orange-400">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="russian">Русский</SelectItem>
-                        <SelectItem value="uzbek">O'zbek</SelectItem>
-                        <SelectItem value="english">English</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-purple-700 font-bold">Стиль</label>
-                    <Select value={tone} onValueChange={setTone}>
-                      <SelectTrigger className="border-2 border-purple-300 rounded-full focus:border-orange-400">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="magical">Волшебный</SelectItem>
-                        <SelectItem value="adventurous">Приключенческий</SelectItem>
-                        <SelectItem value="gentle">Нежный</SelectItem>
-                        <SelectItem value="funny">Веселый</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || !theme.trim()}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Создаем сказку...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5 mr-2" />
-                      Создать сказку
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Generated Fairytale Display */}
-            <Card className="bg-white/90 backdrop-blur-sm border-4 border-orange-200 rounded-3xl shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl font-bold text-orange-700 flex items-center" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                  <BookOpen className="w-6 h-6 mr-2" />
-                  Ваша сказка
+                <CardTitle className="text-3xl font-bold text-purple-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  <Wand2 className="w-8 h-8 text-yellow-500" />
+                  Параметры сказки
+                  <Sparkles className="w-8 h-8 text-yellow-500" />
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {generatedFairytale ? (
-                  <div className="space-y-4">
+                <form onSubmit={handleGenerate} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="text-xl font-bold text-purple-700 mb-2" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                        {generatedFairytale.title}
-                      </h3>
-                      <Badge variant="outline" className="border-2 border-green-300 text-green-700 rounded-full font-medium mb-4">
-                        Язык: {generatedFairytale.language === 'russian' ? 'Русский' : 
-                               generatedFairytale.language === 'uzbek' ? "O'zbek" : 'English'}
-                      </Badge>
+                      <Label htmlFor="protagonist" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                        Главный герой 👑
+                      </Label>
+                      <Input
+                        id="protagonist"
+                        value={protagonist}
+                        onChange={(e) => setProtagonist(e.target.value)}
+                        className="border-4 border-orange-200 rounded-2xl focus:border-orange-400 font-medium text-lg p-4"
+                        placeholder="Например: принцесса, молодой пастух..."
+                        required
+                      />
                     </div>
-                    
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border-2 border-purple-200 max-h-96 overflow-y-auto">
-                      <p className="text-purple-700 whitespace-pre-wrap leading-relaxed">
-                        {generatedFairytale.content}
-                      </p>
+                    <div>
+                      <Label htmlFor="setting" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                        Место действия 🏰
+                      </Label>
+                      <Input
+                        id="setting"
+                        value={setting}
+                        onChange={(e) => setSetting(e.target.value)}
+                        className="border-4 border-pink-200 rounded-2xl focus:border-pink-400 font-medium text-lg p-4"
+                        placeholder="Например: волшебный лес, древний город..."
+                        required
+                      />
                     </div>
+                  </div>
 
+                  <div>
+                    <Label htmlFor="theme" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Тема сказки 🌟
+                    </Label>
+                    <Textarea
+                      id="theme"
+                      value={theme}
+                      onChange={(e) => setTheme(e.target.value)}
+                      className="border-4 border-green-200 rounded-2xl focus:border-green-400 font-medium text-lg p-4 min-h-[100px]"
+                      placeholder="О чем должна быть сказка? Например: о дружбе, о победе добра над злом..."
+                      required
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                        Длина сказки 📏
+                      </Label>
+                      <Select value={length} onValueChange={setLength}>
+                        <SelectTrigger className="border-4 border-blue-200 rounded-2xl focus:border-blue-400 font-medium text-lg p-4">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-2 border-blue-200 rounded-2xl">
+                          <SelectItem value="short" className="font-medium">Короткая (1-2 минуты)</SelectItem>
+                          <SelectItem value="medium" className="font-medium">Средняя (3-5 минут)</SelectItem>
+                          <SelectItem value="long" className="font-medium">Длинная (5-10 минут)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                        Язык 🌍
+                      </Label>
+                      <Select value={language} onValueChange={setLanguage}>
+                        <SelectTrigger className="border-4 border-yellow-200 rounded-2xl focus:border-yellow-400 font-medium text-lg p-4">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-2 border-yellow-200 rounded-2xl">
+                          <SelectItem value="russian" className="font-medium">Русский</SelectItem>
+                          <SelectItem value="uzbek" className="font-medium">Узбекский</SelectItem>
+                          <SelectItem value="english" className="font-medium">Английский</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 justify-center pt-4">
                     <Button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-3 rounded-full border-4 border-green-300 shadow-lg transform hover:scale-105 transition-all font-bold"
+                      type="submit"
+                      disabled={loading}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
                     >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                          Сохраняем...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-5 h-5 mr-2" />
-                          Сохранить сказку
-                        </>
-                      )}
+                      {loading ? "Генерация..." : "Создать сказку"}
                     </Button>
+                    <Link to="/">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                      >
+                        Отмена
+                      </Button>
+                    </Link>
                   </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Wand2 className="w-16 h-16 text-orange-400 mx-auto mb-4 opacity-50" />
-                    <p className="text-orange-600 font-medium">
-                      Заполните форму слева и нажмите "Создать сказку"
-                    </p>
-                  </div>
-                )}
+                </form>
               </CardContent>
             </Card>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-6">
+              <Card className="bg-white/90 backdrop-blur-sm border-4 border-green-200 rounded-3xl shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-3xl font-bold text-green-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                    <Star className="w-8 h-8 text-yellow-500" />
+                    {generatedStory.title}
+                    <Star className="w-8 h-8 text-yellow-500" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
+                    <div className="whitespace-pre-wrap text-green-800 font-medium leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                      {generatedStory.content}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 justify-center pt-4">
+                    <Button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-8 py-4 rounded-full border-4 border-green-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                    >
+                      <Save className="w-5 h-5 mr-2" />
+                      {saving ? "Сохранение..." : "Сохранить сказку"}
+                    </Button>
+                    <Button
+                      onClick={() => setGeneratedStory(null)}
+                      variant="outline"
+                      className="border-4 border-purple-400 text-purple-700 hover:bg-purple-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                    >
+                      Создать новую
+                    </Button>
+                    <Link to="/library">
+                      <Button
+                        variant="outline"
+                        className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                      >
+                        Каталог
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

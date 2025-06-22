@@ -12,12 +12,6 @@ export interface Fairytale {
   updated_at?: string;
   language?: string;
   type?: string;
-  audio_url?: string;
-  image_url?: string;
-  like_count?: number;
-  status?: string;
-  original_content?: string;
-  moderated_content?: string;
 }
 
 export interface AIFairytale {
@@ -27,10 +21,6 @@ export interface AIFairytale {
   parameters?: any;
   created_at: string;
   updated_at: string;
-  language?: string;
-  audio_url?: string;
-  image_url?: string;
-  like_count?: number;
 }
 
 export const useFairytales = () => {
@@ -50,27 +40,15 @@ export const useFairytales = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (fairytalesError) {
-        console.error('Error fetching fairytales:', fairytalesError);
-        setFairytales([]);
-      } else {
-        console.log('Fetched fairytales:', fairytalesData);
-        setFairytales(fairytalesData || []);
-      }
+      if (fairytalesError) throw fairytalesError;
 
       // Fetch from user_fairytales table (user-generated stories)
       const { data: userFairytalesData, error: userFairytalesError } = await supabase
         .from('user_fairytales')
         .select('*')
-        .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
-      if (userFairytalesError) {
-        console.error('Error fetching user fairytales:', userFairytalesError);
-        setUserFairytales([]);
-      } else {
-        setUserFairytales(userFairytalesData || []);
-      }
+      if (userFairytalesError) throw userFairytalesError;
 
       // Fetch from ai_fairytales table (AI-generated stories)
       const { data: aiFairytalesData, error: aiFairytalesError } = await supabase
@@ -84,8 +62,10 @@ export const useFairytales = () => {
       } else {
         setAiFairytales(aiFairytalesData || []);
       }
+
+      setFairytales(fairytalesData || []);
+      setUserFairytales(userFairytalesData || []);
     } catch (err) {
-      console.error('Error in fetchFairytales:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
@@ -96,148 +76,39 @@ export const useFairytales = () => {
     fetchFairytales();
   }, []);
 
-  const moderateContent = async (content: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('moderate-content', {
-        body: { content }
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (err) {
-      console.error('Content moderation error:', err);
-      return { isAppropriate: false, moderatedContent: content };
-    }
-  };
-
-  const generateImage = async (title: string, content: string, language: string = 'russian') => {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-image', {
-        body: { title, content, language }
-      });
-
-      if (error) throw error;
-      return data.imageUrl;
-    } catch (err) {
-      console.error('Image generation error:', err);
-      return null;
-    }
-  };
-
   const addUserFairytale = async (title: string, content: string, authorId: string) => {
     try {
-      // First moderate the content
-      const moderationResult = await moderateContent(content);
-      
-      if (!moderationResult.isAppropriate) {
-        return { 
-          data: null, 
-          error: moderationResult.reason || 'В сказке содержится неподобающий контент',
-          moderationFailed: true
-        };
-      }
-
-      // Generate image for the story
-      const imageUrl = await generateImage(title, moderationResult.moderatedContent || content);
-
       const { data, error } = await supabase
         .from('user_fairytales')
-        .insert([{ 
-          title, 
-          content: moderationResult.moderatedContent || content,
-          original_content: content,
-          moderated_content: moderationResult.moderatedContent,
-          author_id: authorId,
-          status: 'approved',
-          image_url: imageUrl
-        }])
+        .insert([{ title, content, author_id: authorId }])
         .select()
         .single();
 
       if (error) throw error;
-      
-      // Refresh the list
-      await fetchFairytales();
-      return { 
-        data, 
-        error: null, 
-        wasModerated: !!moderationResult.moderatedContent,
-        moderatedContent: moderationResult.moderatedContent,
-        message: moderationResult.message
-      };
-    } catch (err) {
-      return { data: null, error: err instanceof Error ? err.message : 'An error occurred' };
-    }
-  };
-
-  const addAIFairytale = async (title: string, content: string, parameters?: any, language?: string) => {
-    try {
-      // Generate image for the AI story
-      const imageUrl = await generateImage(title, content, language);
-
-      const { data, error } = await supabase
-        .from('ai_fairytales')
-        .insert([{ 
-          title, 
-          content, 
-          parameters, 
-          language: language || 'russian',
-          image_url: imageUrl
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
       
       // Refresh the list
       await fetchFairytales();
       return { data, error: null };
     } catch (err) {
-      console.error('Error saving AI fairytale:', err);
       return { data: null, error: err instanceof Error ? err.message : 'An error occurred' };
     }
   };
 
-  const generateTTS = async (text: string, language: string = 'russian') => {
+  const addAIFairytale = async (title: string, content: string, parameters?: any) => {
     try {
-      const { data, error } = await supabase.functions.invoke('generate-tts', {
-        body: { text, language }
-      });
+      const { data, error } = await supabase
+        .from('ai_fairytales')
+        .insert([{ title, content, parameters }])
+        .select()
+        .single();
 
       if (error) throw error;
-      return data;
+      
+      // Refresh the list
+      await fetchFairytales();
+      return { data, error: null };
     } catch (err) {
-      console.error('TTS generation error:', err);
-      return { error: err instanceof Error ? err.message : 'TTS generation failed' };
-    }
-  };
-
-  const getUserFairytales = async (userId: string) => {
-    try {
-      const { data: userStories, error: userError } = await supabase
-        .from('user_fairytales')
-        .select('*')
-        .eq('author_id', userId);
-
-      const { data: aiStories, error: aiError } = await supabase
-        .from('ai_fairytales')
-        .select('*');
-
-      if (userError || aiError) {
-        console.error('Error fetching user stories:', userError || aiError);
-        return [];
-      }
-
-      return [
-        ...(userStories || []).map(story => ({ ...story, source: 'user' })),
-        ...(aiStories || []).map(story => ({ ...story, source: 'ai' }))
-      ];
-    } catch (err) {
-      console.error('Error in getUserFairytales:', err);
-      return [];
+      return { data: null, error: err instanceof Error ? err.message : 'An error occurred' };
     }
   };
 
@@ -249,8 +120,6 @@ export const useFairytales = () => {
     error,
     addUserFairytale,
     addAIFairytale,
-    generateTTS,
-    getUserFairytales,
     refetch: fetchFairytales,
   };
 };

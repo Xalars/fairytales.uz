@@ -4,48 +4,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, BookOpen, Search, Filter } from "lucide-react";
+import { Heart, Play, BookOpen, Search, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
-import { useLikes } from "@/hooks/useLikes";
-import { TTSPlayer } from "@/components/TTSPlayer";
 
 const Library = () => {
   const { user, signOut } = useAuth();
-  const { fairytales, userFairytales, aiFairytales, loading, getUserFairytales } = useFairytales();
-  const { toggleLike, isLiked } = useLikes();
+  const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
   
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [showPreloaded, setShowPreloaded] = useState(true);
   const [showUserGenerated, setShowUserGenerated] = useState(true);
   const [showAIGenerated, setShowAIGenerated] = useState(true);
-  const [showMyPublished, setShowMyPublished] = useState(false);
-  const [myStories, setMyStories] = useState<any[]>([]);
-
-  // Fetch user's published stories when filter is enabled
-  React.useEffect(() => {
-    if (showMyPublished && user) {
-      getUserFairytales(user.id).then(setMyStories);
-    }
-  }, [showMyPublished, user, getUserFairytales]);
 
   // Combine all stories for display
   const allStories = useMemo(() => {
-    if (showMyPublished && user) {
-      return myStories.map(story => ({
-        id: story.id,
-        title: story.title,
-        content: story.content || '',
-        type: story.source === 'user' ? 'Мои опубликованные' : 'Мои ИИ-сказки',
-        source: story.source,
-        language: story.language || 'russian',
-        image_url: story.image_url,
-        like_count: story.like_count || 0
-      }));
-    }
-
     const stories = [];
     
     // Add preloaded fairytales
@@ -55,10 +30,7 @@ const Library = () => {
         title: fairytale.title,
         content: fairytale.text_ru || fairytale.content || '',
         type: 'Народные сказки',
-        source: 'preloaded',
-        language: fairytale.language || 'russian',
-        image_url: fairytale.image_url,
-        like_count: fairytale.like_count || 0
+        source: 'preloaded'
       })));
     }
     
@@ -69,10 +41,7 @@ const Library = () => {
         title: fairytale.title,
         content: fairytale.content || '',
         type: 'Опубликованные пользователями',
-        source: 'user_generated',
-        language: 'russian',
-        image_url: fairytale.image_url,
-        like_count: fairytale.like_count || 0
+        source: 'user_generated'
       })));
     }
     
@@ -83,15 +52,12 @@ const Library = () => {
         title: fairytale.title,
         content: fairytale.content || '',
         type: 'ИИ-сказки',
-        source: 'ai_generated',
-        language: fairytale.language || 'russian',
-        image_url: fairytale.image_url,
-        like_count: fairytale.like_count || 0
+        source: 'ai_generated'
       })));
     }
     
     return stories;
-  }, [fairytales, userFairytales, aiFairytales, showPreloaded, showUserGenerated, showAIGenerated, showMyPublished, myStories, user]);
+  }, [fairytales, userFairytales, aiFairytales, showPreloaded, showUserGenerated, showAIGenerated]);
 
   // Filter stories based on search term
   const filteredStories = useMemo(() => {
@@ -104,30 +70,16 @@ const Library = () => {
     await signOut();
   };
 
-  const handleLike = async (storyId: string, storySource: string) => {
-    if (!user) return;
-    
-    const fairytaleType = storySource === 'preloaded' ? 'folk' : 
-                         storySource === 'user_generated' ? 'user' : 'ai';
-    
-    await toggleLike(storyId, fairytaleType);
+  const handlePreloadedChange = (checked: boolean | "indeterminate") => {
+    setShowPreloaded(checked === true);
   };
 
-  const getStoryImage = (story: any) => {
-    if (story.image_url) {
-      return story.image_url;
-    }
-    
-    // Default images based on story type
-    const defaultImages = {
-      'Народные сказки': 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop',
-      'Опубликованные пользователями': 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop',
-      'ИИ-сказки': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
-      'Мои опубликованные': 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop',
-      'Мои ИИ-сказки': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop'
-    };
-    
-    return defaultImages[story.type as keyof typeof defaultImages] || defaultImages['Народные сказки'];
+  const handleUserGeneratedChange = (checked: boolean | "indeterminate") => {
+    setShowUserGenerated(checked === true);
+  };
+
+  const handleAIGeneratedChange = (checked: boolean | "indeterminate") => {
+    setShowAIGenerated(checked === true);
   };
 
   return (
@@ -209,66 +161,48 @@ const Library = () => {
               />
             </div>
 
-            {/* Enhanced Filter Checkboxes */}
-            <div className="flex flex-wrap gap-4 items-center">
+            {/* Filter Checkboxes with improved styling */}
+            <div className="flex flex-wrap gap-6 items-center">
               <div className="flex items-center space-x-2">
                 <Filter className="w-5 h-5 text-purple-600" />
                 <span className="font-medium text-purple-700">Фильтры:</span>
               </div>
               
-              {user && (
-                <div className="flex items-center space-x-3 bg-gradient-to-r from-pink-50 to-pink-100 rounded-full px-6 py-3 border-4 border-pink-200 hover:border-pink-400 transition-all shadow-lg transform hover:scale-105">
-                  <Checkbox
-                    id="my-published"
-                    checked={showMyPublished}
-                    onCheckedChange={(checked) => setShowMyPublished(checked === true)}
-                    className="border-3 border-pink-400 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500 rounded-lg w-5 h-5"
-                  />
-                  <label htmlFor="my-published" className="text-lg font-bold text-pink-700 cursor-pointer select-none" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                    📝 Опубликованные мной
-                  </label>
-                </div>
-              )}
-              
-              {!showMyPublished && (
-                <>
-                  <div className="flex items-center space-x-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-full px-6 py-3 border-4 border-purple-200 hover:border-purple-400 transition-all shadow-lg transform hover:scale-105">
-                    <Checkbox
-                      id="preloaded"
-                      checked={showPreloaded}
-                      onCheckedChange={(checked) => setShowPreloaded(checked === true)}
-                      className="border-3 border-purple-400 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 rounded-lg w-5 h-5"
-                    />
-                    <label htmlFor="preloaded" className="text-lg font-bold text-purple-700 cursor-pointer select-none" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                      🏰 Народные сказки
-                    </label>
-                  </div>
+              <div className="flex items-center space-x-2 bg-purple-50 rounded-full px-4 py-2 border-2 border-purple-200 hover:border-purple-400 transition-colors">
+                <Checkbox
+                  id="preloaded"
+                  checked={showPreloaded}
+                  onCheckedChange={handlePreloadedChange}
+                  className="border-2 border-purple-400 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 rounded-md"
+                />
+                <label htmlFor="preloaded" className="text-sm font-bold text-purple-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  🏰 Народные сказки
+                </label>
+              </div>
 
-                  <div className="flex items-center space-x-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-full px-6 py-3 border-4 border-orange-200 hover:border-orange-400 transition-all shadow-lg transform hover:scale-105">
-                    <Checkbox
-                      id="user-generated"
-                      checked={showUserGenerated}
-                      onCheckedChange={(checked) => setShowUserGenerated(checked === true)}
-                      className="border-3 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500 rounded-lg w-5 h-5"
-                    />
-                    <label htmlFor="user-generated" className="text-lg font-bold text-orange-700 cursor-pointer select-none" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                      ✍️ Пользовательские
-                    </label>
-                  </div>
+              <div className="flex items-center space-x-2 bg-orange-50 rounded-full px-4 py-2 border-2 border-orange-200 hover:border-orange-400 transition-colors">
+                <Checkbox
+                  id="user-generated"
+                  checked={showUserGenerated}
+                  onCheckedChange={handleUserGeneratedChange}
+                  className="border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500 rounded-md"
+                />
+                <label htmlFor="user-generated" className="text-sm font-bold text-orange-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  ✍️ Опубликованные пользователями
+                </label>
+              </div>
 
-                  <div className="flex items-center space-x-3 bg-gradient-to-r from-green-50 to-green-100 rounded-full px-6 py-3 border-4 border-green-200 hover:border-green-400 transition-all shadow-lg transform hover:scale-105">
-                    <Checkbox
-                      id="ai-generated"
-                      checked={showAIGenerated}
-                      onCheckedChange={(checked) => setShowAIGenerated(checked === true)}
-                      className="border-3 border-green-400 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 rounded-lg w-5 h-5"
-                    />
-                    <label htmlFor="ai-generated" className="text-lg font-bold text-green-700 cursor-pointer select-none" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                      🤖 ИИ-сказки
-                    </label>
-                  </div>
-                </>
-              )}
+              <div className="flex items-center space-x-2 bg-green-50 rounded-full px-4 py-2 border-2 border-green-200 hover:border-green-400 transition-colors">
+                <Checkbox
+                  id="ai-generated"
+                  checked={showAIGenerated}
+                  onCheckedChange={handleAIGeneratedChange}
+                  className="border-2 border-green-400 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 rounded-md"
+                />
+                <label htmlFor="ai-generated" className="text-sm font-bold text-green-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  🤖 ИИ-сказки
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -283,18 +217,16 @@ const Library = () => {
             {filteredStories.map((story) => (
               <Card key={story.id} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
                 <div className="relative overflow-hidden">
-                  <img 
-                    src={getStoryImage(story)} 
-                    alt={story.title}
-                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
+                  <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+                    <BookOpen className="w-16 h-16 text-white opacity-80" />
+                  </div>
                   <div className="absolute top-3 right-3">
                     <Badge 
                       variant="secondary" 
-                      className={`font-bold rounded-full px-3 py-1 border-2 shadow-lg ${
-                        story.type.includes('Народные') 
+                      className={`font-bold rounded-full px-3 py-1 border-2 ${
+                        story.type === 'Народные сказки' 
                           ? 'bg-purple-100 border-purple-300 text-purple-700'
-                          : story.type.includes('пользователями') || story.type.includes('Мои опубликованные')
+                          : story.type === 'Опубликованные пользователями'
                           ? 'bg-orange-100 border-orange-300 text-orange-700'
                           : 'bg-green-100 border-green-300 text-green-700'
                       }`}
@@ -312,29 +244,20 @@ const Library = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between">
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium">
                         <BookOpen className="w-4 h-4 mr-1" />
                         Читать
                       </Button>
-                      <TTSPlayer text={story.content} language={story.language} />
+                      <Button size="sm" variant="outline" className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium">
+                        <Play className="w-4 h-4 mr-1" />
+                        Слушать
+                      </Button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {user && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleLike(story.id, story.source)}
-                          className="text-pink-600 hover:text-pink-700 hover:bg-pink-50 rounded-full p-2"
-                        >
-                          <Heart className={`w-5 h-5 ${isLiked(story.id, story.source === 'preloaded' ? 'folk' : story.source === 'user_generated' ? 'user' : 'ai') ? 'fill-current' : ''}`} />
-                        </Button>
-                      )}
-                      <div className="flex items-center text-pink-600">
-                        <Heart className="w-4 h-4 mr-1 fill-current" />
-                        <span className="text-sm font-bold">{story.like_count}</span>
-                      </div>
+                    <div className="flex items-center text-pink-600">
+                      <Heart className="w-5 h-5 mr-1 fill-current" />
+                      <span className="text-sm font-bold">{Math.floor(Math.random() * 200) + 50}</span>
                     </div>
                   </div>
                 </CardContent>

@@ -1,35 +1,35 @@
-import React, { useState } from 'react';
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Send, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { BookOpen, Star, Sparkles } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
 import { useToast } from "@/hooks/use-toast";
 
 const Publish = () => {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(false);
   const { user, signOut } = useAuth();
   const { addUserFairytale } = useFairytales();
   const { toast } = useToast();
-  
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [moderationResult, setModerationResult] = useState<{
-    passed: boolean;
-    moderatedContent?: string;
-    message?: string;
-  } | null>(null);
+  const navigate = useNavigate();
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!user) {
       toast({
         title: "Ошибка",
-        description: "Необходимо войти в систему для публикации",
+        description: "Войдите в систему для публикации сказки",
         variant: "destructive",
       });
+      navigate("/auth");
       return;
     }
 
@@ -42,83 +42,33 @@ const Publish = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    setModerationResult(null);
-
+    setLoading(true);
     try {
-      const result = await addUserFairytale(title.trim(), content.trim(), user.id);
+      const { error } = await addUserFairytale(title.trim(), content.trim(), user.id);
       
-      if (result.error) {
-        if (result.moderationFailed) {
-          setModerationResult({
-            passed: false,
-            message: result.error
-          });
-        } else {
-          throw new Error(result.error);
-        }
+      if (error) {
+        toast({
+          title: "Ошибка",
+          description: error,
+          variant: "destructive",
+        });
       } else {
-        if (result.wasModerated) {
-          setModerationResult({
-            passed: true,
-            moderatedContent: result.moderatedContent,
-            message: result.message || 'Мы немного улучшили сказку. Как вам?'
-          });
-        } else {
-          toast({
-            title: "Успех!",
-            description: "Сказка успешно опубликована",
-          });
-          // Reset form
-          setTitle('');
-          setContent('');
-        }
+        toast({
+          title: "Успешно!",
+          description: "Ваша сказка опубликована",
+        });
+        setTitle("");
+        setContent("");
+        navigate("/library");
       }
-
     } catch (err) {
-      console.error('Publishing error:', err);
       toast({
         title: "Ошибка",
-        description: err instanceof Error ? err.message : "Ошибка при публикации сказки",
+        description: "Что-то пошло не так",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleFinalPublish = async () => {
-    if (!moderationResult?.moderatedContent || !user) return;
-
-    setIsSubmitting(true);
-
-    try {
-      // Save the moderated content directly
-      const result = await addUserFairytale(title.trim(), moderationResult.moderatedContent, user.id);
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      toast({
-        title: "Успех!",
-        description: "Улучшенная сказка успешно опубликована",
-      });
-
-      // Reset form
-      setTitle('');
-      setContent('');
-      setModerationResult(null);
-
-    } catch (err) {
-      console.error('Final publishing error:', err);
-      toast({
-        title: "Ошибка",
-        description: err instanceof Error ? err.message : "Ошибка при финальной публикации",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -127,12 +77,24 @@ const Publish = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-10 left-10 opacity-20">
+        <div className="w-20 h-12 bg-white rounded-full"></div>
+        <div className="w-16 h-10 bg-white rounded-full -mt-6 ml-4"></div>
+      </div>
+      <div className="absolute top-20 right-20 opacity-30">
+        <Star className="w-8 h-8 text-yellow-400 fill-current" />
+      </div>
+
       {/* Header */}
-      <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
+      <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
-            <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
+            <div className="relative">
+              <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
+              <Star className="absolute -top-1 -right-1 h-4 w-4 text-yellow-400 fill-current" />
+            </div>
             <div>
               <h1 className="text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                 fAIrytales.uz
@@ -141,15 +103,9 @@ const Publish = () => {
             </div>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-              Каталог
-            </Link>
-            <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">
-              Опубликовать сказку
-            </Link>
-            <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-              ИИ-сказки
-            </Link>
+            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">Каталог</Link>
+            <Link to="/publish" className="text-orange-600 font-bold px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">Опубликовать сказку</Link>
+            <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">ИИ-сказки</Link>
           </nav>
           {user ? (
             <Button 
@@ -169,7 +125,7 @@ const Publish = () => {
                   Войти
                 </Button>
               </Link>
-              <Link to="/auth?mode=signup">
+              <Link to="/auth">
                 <Button 
                   className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
                 >
@@ -181,143 +137,77 @@ const Publish = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h2 className="text-5xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-            Опубликовать Сказку ✍️
-          </h2>
-          <div className="w-32 h-2 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full mx-auto"></div>
-        </div>
-
-        {!user ? (
-          <div className="text-center py-12">
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-8 shadow-lg max-w-md mx-auto">
-              <BookOpen className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-              <p className="text-purple-700 font-medium text-lg mb-4">
-                Войдите в систему, чтобы опубликовать свою сказку
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-5xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+              Опубликовать сказку ✨
+            </h2>
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-4 mx-4 shadow-lg transform rotate-1">
+              <p className="text-xl text-purple-700 font-medium">
+                Поделитесь своей волшебной историей с миром!
               </p>
-              <Link to="/auth">
-                <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold">
-                  Войти
-                </Button>
-              </Link>
             </div>
           </div>
-        ) : (
-          <div className="max-w-2xl mx-auto">
-            <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl font-bold text-purple-700 flex items-center" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                  <BookOpen className="w-6 h-6 mr-2" />
-                  Создайте свою сказку
-                </CardTitle>
-                <CardDescription className="text-purple-600 font-medium">
-                  Поделитесь своей удивительной историей с другими читателями
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-purple-700 font-bold">Название сказки</label>
+
+          <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-2xl transform -rotate-1">
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold text-purple-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                <Sparkles className="w-8 h-8 text-yellow-500" />
+                Создать новую сказку
+                <Sparkles className="w-8 h-8 text-yellow-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <Label htmlFor="title" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                    Название сказки 📖
+                  </Label>
                   <Input
-                    placeholder="Введите название вашей сказки..."
+                    id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    disabled={isSubmitting}
-                    className="border-2 border-purple-300 rounded-full py-3 focus:border-orange-400"
+                    className="border-4 border-orange-200 rounded-2xl focus:border-orange-400 font-medium text-lg p-4"
+                    placeholder="Введите название вашей сказки..."
+                    required
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-purple-700 font-bold">Текст сказки</label>
+                <div>
+                  <Label htmlFor="content" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                    Текст сказки 📝
+                  </Label>
                   <Textarea
-                    placeholder="Напишите свою удивительную сказку здесь..."
+                    id="content"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    disabled={isSubmitting}
-                    className="border-2 border-purple-300 rounded-2xl focus:border-orange-400 min-h-[300px]"
+                    className="border-4 border-pink-200 rounded-2xl focus:border-pink-400 font-medium text-lg p-4 min-h-[300px]"
+                    placeholder="Жили-были..."
+                    required
                   />
                 </div>
-
-                {/* Moderation Results */}
-                {moderationResult && (
-                  <div className={`p-4 rounded-2xl border-2 ${
-                    moderationResult.passed 
-                      ? 'bg-green-50 border-green-200' 
-                      : 'bg-red-50 border-red-200'
-                  }`}>
-                    <div className="flex items-center mb-2">
-                      {moderationResult.passed ? (
-                        <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                      ) : (
-                        <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
-                      )}
-                      <span className={`font-bold ${
-                        moderationResult.passed ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {moderationResult.message}
-                      </span>
-                    </div>
-                    
-                    {moderationResult.passed && moderationResult.moderatedContent && (
-                      <div className="mt-4">
-                        <div className="bg-white p-4 rounded-xl border-2 border-green-300 max-h-60 overflow-y-auto">
-                          <p className="text-green-800 whitespace-pre-wrap leading-relaxed">
-                            {moderationResult.moderatedContent}
-                          </p>
-                        </div>
-                        <Button
-                          onClick={handleFinalPublish}
-                          disabled={isSubmitting}
-                          className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-3 rounded-full border-4 border-green-300 shadow-lg transform hover:scale-105 transition-all font-bold"
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                              Публикуем...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-5 h-5 mr-2" />
-                              Опубликовать
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {!moderationResult && (
+                <div className="flex gap-4 justify-center">
                   <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || !title.trim() || !content.trim()}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold"
+                    type="submit"
+                    disabled={loading}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Проверяем и улучшаем...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5 mr-2" />
-                        Опубликовать сказку
-                      </>
-                    )}
+                    {loading ? "Публикация..." : "Опубликовать"}
                   </Button>
-                )}
-
-                <div className="bg-blue-50 p-4 rounded-2xl border-2 border-blue-200">
-                  <p className="text-blue-700 text-sm">
-                    <strong>Примечание:</strong> Все сказки проходят автоматическую проверку на соответствие 
-                    стандартам детской литературы. Мы можем предложить улучшения для большей читабельности.
-                  </p>
+                  <Link to="/">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                    >
+                      Отмена
+                    </Button>
+                  </Link>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

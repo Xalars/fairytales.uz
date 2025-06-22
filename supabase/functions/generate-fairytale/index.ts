@@ -10,53 +10,40 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { 
-      theme, 
-      character, 
-      location, 
-      moral, 
-      language = 'russian', 
-      tone = 'magical' 
-    } = await req.json();
+    const { protagonist, setting, theme, length, language } = await req.json();
 
-    if (!theme) {
-      throw new Error('Theme is required');
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
     }
 
-    // Language-specific prompts
-    const languageInstructions = {
-      'russian': 'Напиши сказку на русском языке. Используй красивый литературный язык, подходящий для детей.',
-      'uzbek': 'O\'zbek tilida ertak yozing. Bolalar uchun mos va go\'zal adabiy tildan foydalaning.',
-      'english': 'Write a fairy tale in English. Use beautiful literary language suitable for children.'
-    };
+    // Create a detailed prompt based on the parameters
+    const lengthInstruction = {
+      short: 'короткую (300-500 слов)',
+      medium: 'среднюю (500-800 слов)',
+      long: 'длинную (800-1200 слов)'
+    }[length] || 'среднюю';
 
-    const instruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.russian;
+    const languageInstruction = {
+      russian: 'на русском языке',
+      uzbek: 'на узбекском языке',
+      english: 'на английском языке'
+    }[language] || 'на русском языке';
 
-    const systemPrompt = `You are a master storyteller who creates magical fairy tales for children. ${instruction}
+    const prompt = `Напиши ${lengthInstruction} сказку ${languageInstruction} со следующими параметрами:
+    
+Главный герой: ${protagonist}
+Место действия: ${setting}
+Тема: ${theme}
 
-    Create a wonderful fairy tale that includes:
-    - A compelling story with beginning, middle, and end
-    - Vivid descriptions that spark imagination
-    - Child-friendly language and themes
-    - A positive moral lesson
-    - Magical elements that delight young readers
+Сказка должна быть в традициях узбекского фольклора, с элементами магии и волшебства. Включи мораль или поучительный элемент. Сделай историю увлекательной для детей и взрослых.
 
-    The story should be approximately 300-500 words long and completely appropriate for children aged 3-12.`;
-
-    const userPrompt = `Create a fairy tale with these elements:
-    - Theme: ${theme}
-    ${character ? `- Main character: ${character}` : ''}
-    ${location ? `- Setting: ${location}` : ''}
-    ${moral ? `- Moral lesson: ${moral}` : ''}
-    - Tone: ${tone}
-    - Language: ${language}
-
-    Make it magical, engaging, and memorable for children!`;
+Начни с традиционного зачина "Жили-были..." и закончи традиционной концовкой.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -67,11 +54,14 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { 
+            role: 'system', 
+            content: 'Ты - мастер сказочник, специализирующийся на узбекском фольклоре. Твоя задача - создавать красивые, поучительные сказки с элементами традиционной узбекской культуры.'
+          },
+          { role: 'user', content: prompt }
         ],
         temperature: 0.8,
-        max_tokens: 1000,
+        max_tokens: 2000,
       }),
     });
 
@@ -80,55 +70,48 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const fairytaleContent = data.choices[0].message.content;
+    const generatedStory = data.choices[0].message.content;
 
-    // Extract title from the content or generate one
-    const lines = fairytaleContent.split('\n').filter(line => line.trim());
-    let title = lines[0];
-    let content = fairytaleContent;
+    // Generate a title based on the story content
+    const titleResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'Создай короткое, запоминающееся название для сказки. Название должно быть на том же языке, что и сказка.'
+          },
+          { 
+            role: 'user', 
+            content: `Создай название для этой сказки:\n\n${generatedStory.substring(0, 500)}...`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 50,
+      }),
+    });
 
-    // If first line looks like a title, separate it
-    if (title && title.length < 100 && !title.includes('.')) {
-      content = lines.slice(1).join('\n').trim();
-    } else {
-      // Generate a title
-      const titleResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { 
-              role: 'system', 
-              content: `Generate a short, catchy title for this fairy tale in ${language}. Return only the title, nothing else.` 
-            },
-            { role: 'user', content: content.substring(0, 200) }
-          ],
-          temperature: 0.7,
-          max_tokens: 50,
-        }),
-      });
-
-      if (titleResponse.ok) {
-        const titleData = await titleResponse.json();
-        title = titleData.choices[0].message.content.trim();
-      } else {
-        title = language === 'uzbek' ? 'Sehrli Ertak' : 
-               language === 'english' ? 'A Magical Tale' : 'Волшебная сказка';
-      }
-    }
+    const titleData = await titleResponse.json();
+    const generatedTitle = titleData.choices[0].message.content.replace(/['"«»]/g, '');
 
     return new Response(JSON.stringify({ 
-      title: title.replace(/^["']|["']$/g, ''), // Remove quotes if present
-      content: content,
-      language 
+      title: generatedTitle,
+      content: generatedStory,
+      parameters: {
+        protagonist,
+        setting,
+        theme,
+        length,
+        language
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
   } catch (error) {
     console.error('Error in generate-fairytale function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
