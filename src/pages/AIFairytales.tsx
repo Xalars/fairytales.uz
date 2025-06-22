@@ -1,12 +1,13 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { BookOpen, Star, Sparkles, Wand2, Save } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
 import { useToast } from "@/hooks/use-toast";
@@ -19,12 +20,13 @@ const AIFairytales = () => {
   const [length, setLength] = useState("medium");
   const [language, setLanguage] = useState("russian");
   const [loading, setLoading] = useState(false);
-  const [generatedStory, setGeneratedStory] = useState<{title: string, content: string, parameters?: any} | null>(null);
+  const [generatedStory, setGeneratedStory] = useState<{title: string, content: string, language: string, parameters: any} | null>(null);
   const [saving, setSaving] = useState(false);
-  
+
   const { user, signOut } = useAuth();
   const { addAIFairytale } = useFairytales();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,17 +52,24 @@ const AIFairytales = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setGeneratedStory(data);
       toast({
         title: "Успешно!",
-        description: "Сказка сгенерирована! Вы можете её сохранить.",
+        description: "Сказка сгенерирована",
       });
     } catch (err) {
+      console.error('Generation error:', err);
       toast({
         title: "Ошибка",
-        description: err.message || "Что-то пошло не так при генерации сказки",
+        description: err instanceof Error ? err.message : "Не удалось сгенерировать сказку",
         variant: "destructive",
       });
     } finally {
@@ -70,21 +79,33 @@ const AIFairytales = () => {
 
   const handleSave = async () => {
     if (!generatedStory) return;
-    
+
     setSaving(true);
     try {
       const { error } = await addAIFairytale(
-        generatedStory.title,
-        generatedStory.content,
-        generatedStory.parameters
+        generatedStory.title, 
+        generatedStory.content, 
+        generatedStory.parameters,
+        generatedStory.language
       );
-
-      if (error) throw new Error(error);
-
-      toast({
-        title: "Сохранено!",
-        description: "Сказка добавлена в каталог ИИ-сказок",
-      });
+      
+      if (error) {
+        toast({
+          title: "Ошибка",
+          description: error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Успешно!",
+          description: "Сказка сохранена в каталог",
+        });
+        // Reset form
+        setGeneratedStory(null);
+        setProtagonist("");
+        setSetting("");
+        setTheme("");
+      }
     } catch (err) {
       toast({
         title: "Ошибка",
@@ -112,7 +133,7 @@ const AIFairytales = () => {
       </div>
 
       {/* Header */}
-      <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
+      <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
             <div className="relative">
@@ -140,14 +161,23 @@ const AIFairytales = () => {
               Выйти
             </Button>
           ) : (
-            <Link to="/auth">
-              <Button 
-                variant="outline" 
-                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-              >
-                Войти
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-3">
+              <Link to="/auth">
+                <Button 
+                  variant="outline" 
+                  className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                >
+                  Войти
+                </Button>
+              </Link>
+              <Link to="/auth?mode=signup">
+                <Button 
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                >
+                  Зарегистрироваться
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       </header>
@@ -165,160 +195,143 @@ const AIFairytales = () => {
             </div>
           </div>
 
-          {!generatedStory ? (
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Generation Form */}
             <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-2xl transform -rotate-1">
               <CardHeader>
                 <CardTitle className="text-3xl font-bold text-purple-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                   <Wand2 className="w-8 h-8 text-yellow-500" />
-                  Параметры сказки
+                  Создать сказку
                   <Sparkles className="w-8 h-8 text-yellow-500" />
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleGenerate} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="protagonist" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                        Главный герой 👑
-                      </Label>
-                      <Input
-                        id="protagonist"
-                        value={protagonist}
-                        onChange={(e) => setProtagonist(e.target.value)}
-                        className="border-4 border-orange-200 rounded-2xl focus:border-orange-400 font-medium text-lg p-4"
-                        placeholder="Например: принцесса, молодой пастух..."
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="setting" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                        Место действия 🏰
-                      </Label>
-                      <Input
-                        id="setting"
-                        value={setting}
-                        onChange={(e) => setSetting(e.target.value)}
-                        className="border-4 border-pink-200 rounded-2xl focus:border-pink-400 font-medium text-lg p-4"
-                        placeholder="Например: волшебный лес, древний город..."
-                        required
-                      />
-                    </div>
-                  </div>
-
                   <div>
-                    <Label htmlFor="theme" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                      Тема сказки 🌟
+                    <Label htmlFor="protagonist" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Главный герой 👤
                     </Label>
-                    <Textarea
-                      id="theme"
-                      value={theme}
-                      onChange={(e) => setTheme(e.target.value)}
-                      className="border-4 border-green-200 rounded-2xl focus:border-green-400 font-medium text-lg p-4 min-h-[100px]"
-                      placeholder="О чем должна быть сказка? Например: о дружбе, о победе добра над злом..."
+                    <Input
+                      id="protagonist"
+                      value={protagonist}
+                      onChange={(e) => setProtagonist(e.target.value)}
+                      className="border-4 border-orange-200 rounded-2xl focus:border-orange-400 font-medium text-lg p-4"
+                      placeholder="Например: мудрый старик, храбрая принцесса..."
                       required
                     />
                   </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
+                  
+                  <div>
+                    <Label htmlFor="setting" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Место действия 🏰
+                    </Label>
+                    <Input
+                      id="setting"
+                      value={setting}
+                      onChange={(e) => setSetting(e.target.value)}
+                      className="border-4 border-pink-200 rounded-2xl focus:border-pink-400 font-medium text-lg p-4"
+                      placeholder="Например: волшебный лес, древний город..."
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="theme" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Тема сказки 💡
+                    </Label>
+                    <Input
+                      id="theme"
+                      value={theme}
+                      onChange={(e) => setTheme(e.target.value)}
+                      className="border-4 border-green-200 rounded-2xl focus:border-green-400 font-medium text-lg p-4"
+                      placeholder="Например: дружба, справедливость, мудрость..."
+                      required
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                        Длина сказки 📏
+                        Длина 📏
                       </Label>
                       <Select value={length} onValueChange={setLength}>
-                        <SelectTrigger className="border-4 border-blue-200 rounded-2xl focus:border-blue-400 font-medium text-lg p-4">
+                        <SelectTrigger className="border-4 border-yellow-200 rounded-2xl focus:border-yellow-400 font-medium text-lg p-4">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-white border-2 border-blue-200 rounded-2xl">
-                          <SelectItem value="short" className="font-medium">Короткая (1-2 минуты)</SelectItem>
-                          <SelectItem value="medium" className="font-medium">Средняя (3-5 минут)</SelectItem>
-                          <SelectItem value="long" className="font-medium">Длинная (5-10 минут)</SelectItem>
+                        <SelectContent>
+                          <SelectItem value="short">Короткая</SelectItem>
+                          <SelectItem value="medium">Средняя</SelectItem>
+                          <SelectItem value="long">Длинная</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+                    
                     <div>
                       <Label className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                         Язык 🌍
                       </Label>
                       <Select value={language} onValueChange={setLanguage}>
-                        <SelectTrigger className="border-4 border-yellow-200 rounded-2xl focus:border-yellow-400 font-medium text-lg p-4">
+                        <SelectTrigger className="border-4 border-blue-200 rounded-2xl focus:border-blue-400 font-medium text-lg p-4">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-white border-2 border-yellow-200 rounded-2xl">
-                          <SelectItem value="russian" className="font-medium">Русский</SelectItem>
-                          <SelectItem value="uzbek" className="font-medium">Узбекский</SelectItem>
-                          <SelectItem value="english" className="font-medium">Английский</SelectItem>
+                        <SelectContent>
+                          <SelectItem value="russian">Русский</SelectItem>
+                          <SelectItem value="uzbek">O'zbek</SelectItem>
+                          <SelectItem value="english">English</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-
-                  <div className="flex gap-4 justify-center pt-4">
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
-                    >
-                      {loading ? "Генерация..." : "Создать сказку"}
-                    </Button>
-                    <Link to="/">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
-                      >
-                        Отмена
-                      </Button>
-                    </Link>
-                  </div>
+                  
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                  >
+                    {loading ? "Генерирую..." : "Сгенерировать сказку"}
+                  </Button>
                 </form>
               </CardContent>
             </Card>
-          ) : (
-            <div className="space-y-6">
-              <Card className="bg-white/90 backdrop-blur-sm border-4 border-green-200 rounded-3xl shadow-2xl">
+
+            {/* Generated Story Display */}
+            {generatedStory && (
+              <Card className="bg-white/90 backdrop-blur-sm border-4 border-green-200 rounded-3xl shadow-2xl transform rotate-1">
                 <CardHeader>
-                  <CardTitle className="text-3xl font-bold text-green-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                    <Star className="w-8 h-8 text-yellow-500" />
+                  <CardTitle className="text-2xl font-bold text-green-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                    <BookOpen className="w-6 h-6 text-green-600" />
                     {generatedStory.title}
-                    <Star className="w-8 h-8 text-yellow-500" />
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
-                    <div className="whitespace-pre-wrap text-green-800 font-medium leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-                      {generatedStory.content}
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-4 justify-center pt-4">
-                    <Button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-8 py-4 rounded-full border-4 border-green-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
-                    >
-                      <Save className="w-5 h-5 mr-2" />
-                      {saving ? "Сохранение..." : "Сохранить сказку"}
-                    </Button>
-                    <Button
-                      onClick={() => setGeneratedStory(null)}
-                      variant="outline"
-                      className="border-4 border-purple-400 text-purple-700 hover:bg-purple-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
-                    >
-                      Создать новую
-                    </Button>
-                    <Link to="/library">
+                <CardContent>
+                  <div className="space-y-4">
+                    <Textarea
+                      value={generatedStory.content}
+                      readOnly
+                      className="border-4 border-green-200 rounded-2xl font-medium text-base p-4 min-h-[300px] resize-none"
+                    />
+                    <div className="flex gap-4 justify-center">
                       <Button
-                        variant="outline"
-                        className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-full border-4 border-green-300 shadow-lg transform hover:scale-105 transition-all font-bold"
                       >
-                        Каталог
+                        <Save className="w-4 h-4 mr-2" />
+                        {saving ? "Сохраняю..." : "Сохранить сказку"}
                       </Button>
-                    </Link>
+                      <Button
+                        onClick={() => setGeneratedStory(null)}
+                        variant="outline"
+                        className="border-4 border-gray-400 text-gray-700 hover:bg-gray-100 px-6 py-3 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold"
+                      >
+                        Закрыть
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

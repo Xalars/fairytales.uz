@@ -1,13 +1,15 @@
+
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, Play, BookOpen, Search, Filter } from "lucide-react";
+import { Heart, BookOpen, Search, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
+import { TTSPlayer } from "@/components/TTSPlayer";
 
 const Library = () => {
   const { user, signOut } = useAuth();
@@ -30,7 +32,8 @@ const Library = () => {
         title: fairytale.title,
         content: fairytale.text_ru || fairytale.content || '',
         type: 'Народные сказки',
-        source: 'preloaded'
+        source: 'preloaded',
+        language: fairytale.language || 'russian'
       })));
     }
     
@@ -41,7 +44,8 @@ const Library = () => {
         title: fairytale.title,
         content: fairytale.content || '',
         type: 'Опубликованные пользователями',
-        source: 'user_generated'
+        source: 'user_generated',
+        language: 'russian'
       })));
     }
     
@@ -52,7 +56,8 @@ const Library = () => {
         title: fairytale.title,
         content: fairytale.content || '',
         type: 'ИИ-сказки',
-        source: 'ai_generated'
+        source: 'ai_generated',
+        language: fairytale.language || 'russian'
       })));
     }
     
@@ -161,45 +166,45 @@ const Library = () => {
               />
             </div>
 
-            {/* Filter Checkboxes with improved styling */}
+            {/* Enhanced Filter Checkboxes */}
             <div className="flex flex-wrap gap-6 items-center">
               <div className="flex items-center space-x-2">
                 <Filter className="w-5 h-5 text-purple-600" />
                 <span className="font-medium text-purple-700">Фильтры:</span>
               </div>
               
-              <div className="flex items-center space-x-2 bg-purple-50 rounded-full px-4 py-2 border-2 border-purple-200 hover:border-purple-400 transition-colors">
+              <div className="flex items-center space-x-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-full px-6 py-3 border-4 border-purple-200 hover:border-purple-400 transition-all shadow-lg transform hover:scale-105">
                 <Checkbox
                   id="preloaded"
                   checked={showPreloaded}
                   onCheckedChange={handlePreloadedChange}
-                  className="border-2 border-purple-400 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 rounded-md"
+                  className="border-3 border-purple-400 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 rounded-lg w-5 h-5"
                 />
-                <label htmlFor="preloaded" className="text-sm font-bold text-purple-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                <label htmlFor="preloaded" className="text-lg font-bold text-purple-700 cursor-pointer select-none" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                   🏰 Народные сказки
                 </label>
               </div>
 
-              <div className="flex items-center space-x-2 bg-orange-50 rounded-full px-4 py-2 border-2 border-orange-200 hover:border-orange-400 transition-colors">
+              <div className="flex items-center space-x-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-full px-6 py-3 border-4 border-orange-200 hover:border-orange-400 transition-all shadow-lg transform hover:scale-105">
                 <Checkbox
                   id="user-generated"
                   checked={showUserGenerated}
                   onCheckedChange={handleUserGeneratedChange}
-                  className="border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500 rounded-md"
+                  className="border-3 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500 rounded-lg w-5 h-5"
                 />
-                <label htmlFor="user-generated" className="text-sm font-bold text-orange-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                  ✍️ Опубликованные пользователями
+                <label htmlFor="user-generated" className="text-lg font-bold text-orange-700 cursor-pointer select-none" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  ✍️ Пользовательские
                 </label>
               </div>
 
-              <div className="flex items-center space-x-2 bg-green-50 rounded-full px-4 py-2 border-2 border-green-200 hover:border-green-400 transition-colors">
+              <div className="flex items-center space-x-3 bg-gradient-to-r from-green-50 to-green-100 rounded-full px-6 py-3 border-4 border-green-200 hover:border-green-400 transition-all shadow-lg transform hover:scale-105">
                 <Checkbox
                   id="ai-generated"
                   checked={showAIGenerated}
                   onCheckedChange={handleAIGeneratedChange}
-                  className="border-2 border-green-400 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 rounded-md"
+                  className="border-3 border-green-400 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 rounded-lg w-5 h-5"
                 />
-                <label htmlFor="ai-generated" className="text-sm font-bold text-green-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                <label htmlFor="ai-generated" className="text-lg font-bold text-green-700 cursor-pointer select-none" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                   🤖 ИИ-сказки
                 </label>
               </div>
@@ -223,7 +228,7 @@ const Library = () => {
                   <div className="absolute top-3 right-3">
                     <Badge 
                       variant="secondary" 
-                      className={`font-bold rounded-full px-3 py-1 border-2 ${
+                      className={`font-bold rounded-full px-3 py-1 border-2 shadow-lg ${
                         story.type === 'Народные сказки' 
                           ? 'bg-purple-100 border-purple-300 text-purple-700'
                           : story.type === 'Опубликованные пользователями'
@@ -244,16 +249,13 @@ const Library = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium">
                         <BookOpen className="w-4 h-4 mr-1" />
                         Читать
                       </Button>
-                      <Button size="sm" variant="outline" className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium">
-                        <Play className="w-4 h-4 mr-1" />
-                        Слушать
-                      </Button>
+                      <TTSPlayer text={story.content} language={story.language} />
                     </div>
                     <div className="flex items-center text-pink-600">
                       <Heart className="w-5 h-5 mr-1 fill-current" />

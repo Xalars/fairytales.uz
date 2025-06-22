@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +14,9 @@ const Publish = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [moderatedContent, setModeratedContent] = useState<string | null>(null);
+  const [showModerationResult, setShowModerationResult] = useState(false);
+  
   const { user, signOut } = useAuth();
   const { addUserFairytale } = useFairytales();
   const { toast } = useToast();
@@ -44,13 +46,27 @@ const Publish = () => {
 
     setLoading(true);
     try {
-      const { error } = await addUserFairytale(title.trim(), content.trim(), user.id);
+      const result = await addUserFairytale(title.trim(), content.trim(), user.id);
       
-      if (error) {
+      if (result.moderationFailed) {
+        toast({
+          title: "Ошибка модерации",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else if (result.error) {
         toast({
           title: "Ошибка",
-          description: error,
+          description: result.error,
           variant: "destructive",
+        });
+      } else if (result.wasModerated) {
+        // Show moderated content for user approval
+        setModeratedContent(result.moderatedContent);
+        setShowModerationResult(true);
+        toast({
+          title: "Сказка улучшена!",
+          description: "Мы немного улучшили сказку. Как вам?",
         });
       } else {
         toast({
@@ -70,6 +86,20 @@ const Publish = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePublishModerated = async () => {
+    if (!moderatedContent) return;
+    
+    toast({
+      title: "Успешно!",
+      description: "Ваша сказка опубликована",
+    });
+    setTitle("");
+    setContent("");
+    setModeratedContent(null);
+    setShowModerationResult(false);
+    navigate("/library");
   };
 
   const handleSignOut = async () => {
@@ -150,63 +180,102 @@ const Publish = () => {
             </div>
           </div>
 
-          <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-2xl transform -rotate-1">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold text-purple-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                <Sparkles className="w-8 h-8 text-yellow-500" />
-                Создать новую сказку
-                <Sparkles className="w-8 h-8 text-yellow-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <Label htmlFor="title" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                    Название сказки 📖
-                  </Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="border-4 border-orange-200 rounded-2xl focus:border-orange-400 font-medium text-lg p-4"
-                    placeholder="Введите название вашей сказки..."
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="content" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                    Текст сказки 📝
-                  </Label>
-                  <Textarea
-                    id="content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    className="border-4 border-pink-200 rounded-2xl focus:border-pink-400 font-medium text-lg p-4 min-h-[300px]"
-                    placeholder="Жили-были..."
-                    required
-                  />
-                </div>
-                <div className="flex gap-4 justify-center">
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
-                  >
-                    {loading ? "Публикация..." : "Опубликовать"}
-                  </Button>
-                  <Link to="/">
+          {showModerationResult && moderatedContent ? (
+            <Card className="bg-white/90 backdrop-blur-sm border-4 border-green-200 rounded-3xl shadow-2xl transform -rotate-1 mb-8">
+              <CardHeader>
+                <CardTitle className="text-3xl font-bold text-green-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  <Sparkles className="w-8 h-8 text-yellow-500" />
+                  Улучшенная версия
+                  <Sparkles className="w-8 h-8 text-yellow-500" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="bg-green-50 border-4 border-green-200 rounded-2xl p-4">
+                    <p className="text-green-800 font-bold text-lg mb-2">Мы немного улучшили сказку. Как вам?</p>
+                    <Textarea
+                      value={moderatedContent}
+                      readOnly
+                      className="border-4 border-green-300 rounded-2xl font-medium text-lg p-4 min-h-[200px] bg-white"
+                    />
+                  </div>
+                  <div className="flex gap-4 justify-center">
                     <Button
-                      type="button"
+                      onClick={handlePublishModerated}
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 rounded-full border-4 border-green-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                    >
+                      Опубликовать
+                    </Button>
+                    <Button
+                      onClick={() => setShowModerationResult(false)}
                       variant="outline"
                       className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
                     >
-                      Отмена
+                      Редактировать еще
                     </Button>
-                  </Link>
+                  </div>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-2xl transform -rotate-1">
+              <CardHeader>
+                <CardTitle className="text-3xl font-bold text-purple-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  <Sparkles className="w-8 h-8 text-yellow-500" />
+                  Создать новую сказку
+                  <Sparkles className="w-8 h-8 text-yellow-500" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <Label htmlFor="title" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Название сказки 📖
+                    </Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="border-4 border-orange-200 rounded-2xl focus:border-orange-400 font-medium text-lg p-4"
+                      placeholder="Введите название вашей сказки..."
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="content" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Текст сказки 📝
+                    </Label>
+                    <Textarea
+                      id="content"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      className="border-4 border-pink-200 rounded-2xl focus:border-pink-400 font-medium text-lg p-4 min-h-[300px]"
+                      placeholder="Жили-были..."
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-4 justify-center">
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                    >
+                      {loading ? "Проверяю и публикую..." : "Опубликовать"}
+                    </Button>
+                    <Link to="/">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                      >
+                        Отмена
+                      </Button>
+                    </Link>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

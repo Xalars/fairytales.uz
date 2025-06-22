@@ -11,25 +11,31 @@ export type Database = {
     Tables: {
       ai_fairytales: {
         Row: {
+          audio_url: string | null
           content: string
           created_at: string
           id: string
+          language: string | null
           parameters: Json | null
           title: string
           updated_at: string
         }
         Insert: {
+          audio_url?: string | null
           content: string
           created_at?: string
           id?: string
+          language?: string | null
           parameters?: Json | null
           title: string
           updated_at?: string
         }
         Update: {
+          audio_url?: string | null
           content?: string
           created_at?: string
           id?: string
+          language?: string | null
           parameters?: Json | null
           title?: string
           updated_at?: string
@@ -38,6 +44,7 @@ export type Database = {
       }
       Fairytales: {
         Row: {
+          audio_url: string | null
           created_at: string | null
           id: string
           language: string | null
@@ -46,6 +53,7 @@ export type Database = {
           type: string | null
         }
         Insert: {
+          audio_url?: string | null
           created_at?: string | null
           id: string
           language?: string | null
@@ -54,6 +62,7 @@ export type Database = {
           type?: string | null
         }
         Update: {
+          audio_url?: string | null
           created_at?: string | null
           id?: string
           language?: string | null
@@ -92,26 +101,38 @@ export type Database = {
       }
       user_fairytales: {
         Row: {
+          audio_url: string | null
           author_id: string | null
           content: string
           created_at: string
           id: string
+          moderated_content: string | null
+          original_content: string | null
+          status: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          audio_url?: string | null
           author_id?: string | null
           content: string
           created_at?: string
           id?: string
+          moderated_content?: string | null
+          original_content?: string | null
+          status?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          audio_url?: string | null
           author_id?: string | null
           content?: string
           created_at?: string
           id?: string
+          moderated_content?: string | null
+          original_content?: string | null
+          status?: string | null
           title?: string
           updated_at?: string
         }

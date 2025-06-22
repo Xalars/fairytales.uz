@@ -22,21 +22,55 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Create a detailed prompt based on the parameters
-    const lengthInstruction = {
-      short: 'короткую (300-500 слов)',
-      medium: 'среднюю (500-800 слов)',
-      long: 'длинную (800-1200 слов)'
-    }[length] || 'среднюю';
-
-    const languageInstruction = {
-      russian: 'на русском языке',
-      uzbek: 'на узбекском языке',
-      english: 'на английском языке'
-    }[language] || 'на русском языке';
-
-    const prompt = `Напиши ${lengthInstruction} сказку ${languageInstruction} со следующими параметрами:
+    // Create language-specific prompts
+    let prompt = '';
+    let systemPrompt = '';
     
+    if (language === 'uzbek') {
+      systemPrompt = 'Siz o\'zbek xalq ertaklarini yaratuvchi ustasiz. O\'zbek madaniyati va an\'analariga mos keladigan go\'zal, ibratli ertaklar yarating.';
+      const lengthInstruction = {
+        short: 'qisqa (300-500 so\'z)',
+        medium: 'o\'rtacha (500-800 so\'z)',
+        long: 'uzun (800-1200 so\'z)'
+      }[length] || 'o\'rtacha';
+      
+      prompt = `${lengthInstruction} ertak yozing o\'zbek tilida:
+      
+Bosh qahramon: ${protagonist}
+Voqea joyi: ${setting}
+Mavzu: ${theme}
+
+Ertak o\'zbek xalq og\'zaki ijodi an\'analarida bo\'lishi kerak, sehr va tilsim elementlari bilan. Ibrat yoki ta\'limiy jihat qo\'shing. Bolalar va kattalar uchun qiziqarli qiling.
+
+"Bir bor ekan, bir yo\'q ekan..." bilan boshlang va an\'anaviy tugash bilan yakunlang.`;
+    } else if (language === 'english') {
+      systemPrompt = 'You are a master storyteller specializing in Uzbek folklore adapted for English speakers. Create beautiful, educational fairy tales with elements of traditional Uzbek culture.';
+      const lengthInstruction = {
+        short: 'short (300-500 words)',
+        medium: 'medium (500-800 words)',
+        long: 'long (800-1200 words)'
+      }[length] || 'medium';
+      
+      prompt = `Write a ${lengthInstruction} fairy tale in English:
+      
+Main character: ${protagonist}
+Setting: ${setting}
+Theme: ${theme}
+
+The fairy tale should be in the traditions of Uzbek folklore, with elements of magic and wonder. Include a moral or educational element. Make the story engaging for both children and adults.
+
+Start with a traditional opening like "Once upon a time..." and end with a traditional conclusion.`;
+    } else {
+      // Default to Russian
+      systemPrompt = 'Ты - мастер сказочник, специализирующийся на узбекском фольклоре. Твоя задача - создавать красивые, поучительные сказки с элементами традиционной узбекской культуры.';
+      const lengthInstruction = {
+        short: 'короткую (300-500 слов)',
+        medium: 'среднюю (500-800 слов)',
+        long: 'длинную (800-1200 слов)'
+      }[length] || 'среднюю';
+      
+      prompt = `Напиши ${lengthInstruction} сказку на русском языке со следующими параметрами:
+      
 Главный герой: ${protagonist}
 Место действия: ${setting}
 Тема: ${theme}
@@ -44,6 +78,7 @@ serve(async (req) => {
 Сказка должна быть в традициях узбекского фольклора, с элементами магии и волшебства. Включи мораль или поучительный элемент. Сделай историю увлекательной для детей и взрослых.
 
 Начни с традиционного зачина "Жили-были..." и закончи традиционной концовкой.`;
+    }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -54,10 +89,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { 
-            role: 'system', 
-            content: 'Ты - мастер сказочник, специализирующийся на узбекском фольклоре. Твоя задача - создавать красивые, поучительные сказки с элементами традиционной узбекской культуры.'
-          },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
         ],
         temperature: 0.8,
@@ -72,7 +104,21 @@ serve(async (req) => {
     const data = await response.json();
     const generatedStory = data.choices[0].message.content;
 
-    // Generate a title based on the story content
+    // Generate a title in the same language
+    let titlePrompt = '';
+    let titleSystemPrompt = '';
+    
+    if (language === 'uzbek') {
+      titleSystemPrompt = 'Ertak uchun qisqa, esda qoladigan nom yarating. Nom ertak bilan bir xil tilda bo\'lishi kerak.';
+      titlePrompt = `Ushbu ertak uchun nom yarating:\n\n${generatedStory.substring(0, 500)}...`;
+    } else if (language === 'english') {
+      titleSystemPrompt = 'Create a short, memorable title for the fairy tale. The title should be in the same language as the fairy tale.';
+      titlePrompt = `Create a title for this fairy tale:\n\n${generatedStory.substring(0, 500)}...`;
+    } else {
+      titleSystemPrompt = 'Создай короткое, запоминающееся название для сказки. Название должно быть на том же языке, что и сказка.';
+      titlePrompt = `Создай название для этой сказки:\n\n${generatedStory.substring(0, 500)}...`;
+    }
+
     const titleResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -82,14 +128,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { 
-            role: 'system', 
-            content: 'Создай короткое, запоминающееся название для сказки. Название должно быть на том же языке, что и сказка.'
-          },
-          { 
-            role: 'user', 
-            content: `Создай название для этой сказки:\n\n${generatedStory.substring(0, 500)}...`
-          }
+          { role: 'system', content: titleSystemPrompt },
+          { role: 'user', content: titlePrompt }
         ],
         temperature: 0.7,
         max_tokens: 50,
@@ -102,6 +142,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       title: generatedTitle,
       content: generatedStory,
+      language: language,
       parameters: {
         protagonist,
         setting,
