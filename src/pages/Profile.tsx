@@ -24,7 +24,7 @@ interface Story {
 }
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const { userLikes, isLiked } = useLikes();
   const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio } = useAudio();
   const navigate = useNavigate();
@@ -34,12 +34,17 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    // Only redirect if auth is not loading and user is definitely not authenticated
+    if (!authLoading && !user) {
       navigate('/auth');
       return;
     }
-    fetchUserData();
-  }, [user, navigate]);
+    
+    // Only fetch data if user exists and auth is not loading
+    if (!authLoading && user) {
+      fetchUserData();
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (userLikes.length > 0) {
@@ -240,6 +245,19 @@ const Profile = () => {
     </Card>
   );
 
+  // Show loading spinner while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 animate-spin rounded-full border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-purple-700 font-medium text-lg">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only render if user exists
   if (!user) {
     return null;
   }
