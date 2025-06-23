@@ -10,6 +10,8 @@ import Library from "./pages/Library";
 import Publish from "./pages/Publish";
 import Auth from "./pages/Auth";
 import AIFairytales from "./pages/AIFairytales";
+import StoryView from "./pages/StoryView";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/publish" element={<Publish />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/ai-fairytales" element={<AIFairytales />} />
+          <Route path="/story/:type/:id" element={<StoryView />} />
+          <Route path="/profile" element={<Profile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

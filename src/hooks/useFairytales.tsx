@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface Fairytale {
   id: string;
@@ -43,6 +43,7 @@ export interface AIFairytale {
 }
 
 export const useFairytales = () => {
+  const { user } = useAuth();
   const [fairytales, setFairytales] = useState<FolkFairytale[]>([]);
   const [userFairytales, setUserFairytales] = useState<Fairytale[]>([]);
   const [aiFairytales, setAiFairytales] = useState<AIFairytale[]>([]);
@@ -136,7 +137,8 @@ export const useFairytales = () => {
           title: title.trim(), 
           content: content.trim(), 
           parameters: parameters || {},
-          language: parameters?.language || 'russian'
+          language: parameters?.language || 'russian',
+          created_by_user_id: user?.id || null
         }])
         .select()
         .single();

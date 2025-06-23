@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +9,12 @@ import { Heart, Play, BookOpen, Search, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
+import { useLikes } from "@/hooks/useLikes";
 
 const Library = () => {
   const { user, signOut } = useAuth();
   const { fairytales, userFairytales, aiFairytales, loading, error } = useFairytales();
+  const { toggleLike, isLiked } = useLikes();
   
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,7 +42,7 @@ const Library = () => {
         title: fairytale.title || 'Без названия',
         content: fairytale.content || '',
         type: 'Народные сказки',
-        source: 'folk',
+        source: 'folk' as const,
         image_url: fairytale.image_url,
         audio_url: fairytale.audio_url,
         like_count: fairytale.like_count || 0
@@ -55,7 +58,7 @@ const Library = () => {
         title: fairytale.title || 'Без названия',
         content: fairytale.content || '',
         type: 'Опубликованные пользователями',
-        source: 'user_generated',
+        source: 'user_generated' as const,
         image_url: fairytale.image_url,
         audio_url: fairytale.audio_url,
         like_count: fairytale.like_count || 0
@@ -71,7 +74,7 @@ const Library = () => {
         title: fairytale.title || 'Без названия',
         content: fairytale.content || '',
         type: 'ИИ-сказки',
-        source: 'ai_generated',
+        source: 'ai_generated' as const,
         image_url: fairytale.image_url,
         audio_url: fairytale.audio_url,
         like_count: fairytale.like_count || 0
@@ -93,6 +96,11 @@ const Library = () => {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleLike = async (storyId: string, storySource: 'folk' | 'user_generated' | 'ai_generated') => {
+    if (!user) return;
+    await toggleLike(storyId, storySource);
   };
 
   const handlePreloadedChange = (checked: boolean | "indeterminate") => {
@@ -136,6 +144,11 @@ const Library = () => {
             <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
               ИИ-сказки
             </Link>
+            {user && (
+              <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+                Профиль
+              </Link>
+            )}
           </nav>
           {user ? (
             <Button 
@@ -289,18 +302,41 @@ const Library = () => {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium">
-                        <BookOpen className="w-4 h-4 mr-1" />
-                        Читать
-                      </Button>
-                      <Button size="sm" variant="outline" className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium">
-                        <Play className="w-4 h-4 mr-1" />
-                        Слушать
-                      </Button>
+                      <Link to={`/story/${story.source}/${story.id}`}>
+                        <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium">
+                          <BookOpen className="w-4 h-4 mr-1" />
+                          Читать
+                        </Button>
+                      </Link>
+                      {story.audio_url && (
+                        <Button size="sm" variant="outline" className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium">
+                          <Play className="w-4 h-4 mr-1" />
+                          Слушать
+                        </Button>
+                      )}
                     </div>
-                    <div className="flex items-center text-pink-600">
-                      <Heart className="w-5 h-5 mr-1 fill-current" />
-                      <span className="text-sm font-bold">{story.like_count}</span>
+                    <div className="flex items-center gap-2">
+                      {user && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleLike(story.id, story.source)}
+                          className={`border-2 rounded-full font-medium ${
+                            isLiked(story.id, story.source)
+                              ? 'border-pink-400 bg-pink-100 text-pink-700'
+                              : 'border-pink-300 text-pink-700 hover:bg-pink-100'
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
+                          {story.like_count}
+                        </Button>
+                      )}
+                      {!user && (
+                        <div className="flex items-center text-pink-600">
+                          <Heart className="w-5 h-5 mr-1 fill-current" />
+                          <span className="text-sm font-bold">{story.like_count}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
