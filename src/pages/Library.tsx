@@ -4,16 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Heart, Play, BookOpen, Search, Filter } from "lucide-react";
+import { Heart, Play, BookOpen, Search, Filter, Pause } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
 import { useLikes } from "@/hooks/useLikes";
+import { useAudio } from "@/hooks/useAudio";
 
 const Library = () => {
   const { user, signOut } = useAuth();
   const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
   const { toggleLike, isLiked } = useLikes();
+  const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio } = useAudio();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -71,6 +73,14 @@ const Library = () => {
 
   const handleLike = async (storyId: string, source: 'folk' | 'user_generated' | 'ai_generated') => {
     await toggleLike(storyId, source);
+  };
+
+  const handlePlayAudio = async (story: any) => {
+    if (isPlaying) {
+      stopAudio();
+    } else {
+      await generateAndPlayAudio(story.content, story.id, story.source, story.audio_url);
+    }
   };
 
   return (
@@ -228,12 +238,30 @@ const Library = () => {
                           Читать
                         </Button>
                       </Link>
-                      {story.audio_url && (
-                        <Button size="sm" variant="outline" className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium">
-                          <Play className="w-4 h-4 mr-1" />
-                          Слушать
-                        </Button>
-                      )}
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium"
+                        onClick={() => handlePlayAudio(story)}
+                        disabled={isGenerating}
+                      >
+                        {isGenerating ? (
+                          <>
+                            <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                            Генерация...
+                          </>
+                        ) : isPlaying ? (
+                          <>
+                            <Pause className="w-4 h-4 mr-1" />
+                            Стоп
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 mr-1" />
+                            Слушать
+                          </>
+                        )}
+                      </Button>
                     </div>
                     <div className="flex items-center text-pink-600">
                       <button

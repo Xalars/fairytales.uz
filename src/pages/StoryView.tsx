@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Heart, Play, BookOpen } from "lucide-react";
+import { ArrowLeft, Heart, Play, BookOpen, Pause } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLikes } from "@/hooks/useLikes";
+import { useAudio } from "@/hooks/useAudio";
 import { supabase } from '@/integrations/supabase/client';
 
 interface Story {
@@ -25,6 +26,7 @@ const StoryView = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toggleLike, isLiked } = useLikes();
+  const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio } = useAudio();
   const [story, setStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(true);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -94,16 +96,28 @@ const StoryView = () => {
 
     setLikeLoading(true);
     try {
+      const wasLiked = isLiked(story.id, story.source);
       await toggleLike(story.id, story.source);
+      
       // Update local like count
       setStory(prev => prev ? {
         ...prev,
-        like_count: isLiked(story.id, story.source) ? prev.like_count - 1 : prev.like_count + 1
+        like_count: wasLiked ? prev.like_count - 1 : prev.like_count + 1
       } : null);
     } catch (error) {
       console.error('Error toggling like:', error);
     } finally {
       setLikeLoading(false);
+    }
+  };
+
+  const handlePlayAudio = async () => {
+    if (!story) return;
+    
+    if (isPlaying) {
+      stopAudio();
+    } else {
+      await generateAndPlayAudio(story.content, story.id, story.source, story.audio_url);
     }
   };
 
@@ -151,6 +165,11 @@ const StoryView = () => {
             <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
               ИИ-сказки
             </Link>
+            {user && (
+              <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+                Профиль
+              </Link>
+            )}
           </nav>
           {user ? (
             <Button 
@@ -228,12 +247,30 @@ const StoryView = () => {
                     {story.like_count}
                   </Button>
                 )}
-                {story.audio_url && (
-                  <Button size="sm" variant="outline" className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium">
-                    <Play className="w-4 h-4 mr-1" />
-                    Слушать
-                  </Button>
-                )}
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium"
+                  onClick={handlePlayAudio}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                      Генерация...
+                    </>
+                  ) : isPlaying ? (
+                    <>
+                      <Pause className="w-4 h-4 mr-1" />
+                      Стоп
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 mr-1" />
+                      Слушать
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </CardHeader>

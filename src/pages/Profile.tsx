@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Play, BookOpen, User } from "lucide-react";
+import { Heart, Play, BookOpen, Pause } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLikes } from "@/hooks/useLikes";
+import { useAudio } from "@/hooks/useAudio";
 import { supabase } from '@/integrations/supabase/client';
 
 interface Story {
@@ -25,6 +26,7 @@ interface Story {
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { userLikes, isLiked } = useLikes();
+  const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio } = useAudio();
   const navigate = useNavigate();
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [aiStories, setAiStories] = useState<Story[]>([]);
@@ -154,6 +156,14 @@ const Profile = () => {
     await signOut();
   };
 
+  const handlePlayAudio = async (story: Story) => {
+    if (isPlaying) {
+      stopAudio();
+    } else {
+      await generateAndPlayAudio(story.content, story.id, story.source, story.audio_url);
+    }
+  };
+
   const renderStoryCard = (story: Story) => (
     <Card key={`${story.source}-${story.id}`} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
       <div className="relative overflow-hidden">
@@ -196,12 +206,30 @@ const Profile = () => {
                 Читать
               </Button>
             </Link>
-            {story.audio_url && (
-              <Button size="sm" variant="outline" className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium">
-                <Play className="w-4 h-4 mr-1" />
-                Слушать
-              </Button>
-            )}
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium"
+              onClick={() => handlePlayAudio(story)}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                  Генерация...
+                </>
+              ) : isPlaying ? (
+                <>
+                  <Pause className="w-4 h-4 mr-1" />
+                  Стоп
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-1" />
+                  Слушать
+                </>
+              )}
+            </Button>
           </div>
           <div className="flex items-center text-pink-600">
             <Heart className={`w-5 h-5 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
