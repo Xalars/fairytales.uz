@@ -71,9 +71,11 @@ export const useLikes = () => {
         setUserLikes(prev => prev.filter(like => like.id !== existingLike.id));
         console.log('Successfully removed like');
         
-        // Trigger a refetch to update like counts everywhere
+        // Trigger a custom event to update like counts everywhere
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('likesUpdated'));
+          window.dispatchEvent(new CustomEvent('likesUpdated', {
+            detail: { fairytaleId, fairytaleType, action: 'unlike' }
+          }));
         }, 100);
         
         return false;
@@ -99,9 +101,11 @@ export const useLikes = () => {
         setUserLikes(prev => [...prev, data]);
         console.log('Successfully added like:', data);
         
-        // Trigger a refetch to update like counts everywhere
+        // Trigger a custom event to update like counts everywhere
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('likesUpdated'));
+          window.dispatchEvent(new CustomEvent('likesUpdated', {
+            detail: { fairytaleId, fairytaleType, action: 'like' }
+          }));
         }, 100);
         
         return true;

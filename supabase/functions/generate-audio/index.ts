@@ -55,7 +55,7 @@ serve(async (req) => {
     if (!ttsResponse.ok) {
       const errorText = await ttsResponse.text();
       console.error('OpenAI TTS error:', errorText);
-      throw new Error(`OpenAI TTS error: ${errorText}`);
+      throw new Error(`OpenAI TTS error: ${ttsResponse.status} ${errorText}`);
     }
 
     // Get audio buffer
@@ -115,7 +115,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         audioUrl: audioUrl,
-        audioContent: btoa(String.fromCharCode(...audioFile))
+        success: true
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

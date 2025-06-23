@@ -177,7 +177,7 @@ export const useFairytales = () => {
       
       console.log('AI fairytale saved successfully:', data);
       
-      // Refresh the fairytales list
+      // Refresh the fairytales list to show the new story immediately
       await fetchFairytales();
       
       return { data, error: null };

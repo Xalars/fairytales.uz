@@ -64,23 +64,14 @@ export const useAudio = () => {
         throw error;
       }
 
-      if (!data) {
-        throw new Error('No data returned from audio generation');
+      if (!data || !data.audioUrl) {
+        throw new Error('No audio URL received from generation');
       }
 
       console.log('Audio generation response:', data);
 
       // Play the generated audio
-      let audioUrl = '';
-      if (data.audioUrl) {
-        audioUrl = data.audioUrl;
-      } else if (data.audioContent) {
-        audioUrl = `data:audio/mp3;base64,${data.audioContent}`;
-      } else {
-        throw new Error('No audio URL or content received');
-      }
-
-      const audio = new Audio(audioUrl);
+      const audio = new Audio(data.audioUrl);
       setCurrentAudio(audio);
       setIsPlaying(true);
       
