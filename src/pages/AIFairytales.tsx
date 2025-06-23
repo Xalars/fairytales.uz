@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +41,8 @@ const AIFairytales = () => {
 
     setLoading(true);
     try {
+      console.log('Generating fairy tale with params:', { protagonist, setting, theme, length, language });
+      
       const { data, error } = await supabase.functions.invoke('generate-fairytale', {
         body: {
           protagonist: protagonist.trim(),
@@ -50,14 +53,19 @@ const AIFairytales = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Generation error:', error);
+        throw error;
+      }
 
+      console.log('Generated fairy tale:', data);
       setGeneratedStory(data);
       toast({
         title: "Успешно!",
         description: "Сказка сгенерирована! Вы можете её сохранить.",
       });
     } catch (err) {
+      console.error('Error generating fairy tale:', err);
       toast({
         title: "Ошибка",
         description: err.message || "Что-то пошло не так при генерации сказки",
@@ -73,22 +81,37 @@ const AIFairytales = () => {
     
     setSaving(true);
     try {
+      console.log('Saving AI fairytale:', generatedStory);
+      
       const { error } = await addAIFairytale(
         generatedStory.title,
         generatedStory.content,
         generatedStory.parameters
       );
 
-      if (error) throw new Error(error);
+      if (error) {
+        console.error('Save error:', error);
+        throw new Error(error);
+      }
 
       toast({
         title: "Сохранено!",
         description: "Сказка добавлена в каталог ИИ-сказок",
       });
+      
+      // Reset form after successful save
+      setGeneratedStory(null);
+      setProtagonist("");
+      setSetting("");
+      setTheme("");
+      setLength("medium");
+      setLanguage("russian");
+      
     } catch (err) {
+      console.error('Error saving fairy tale:', err);
       toast({
         title: "Ошибка",
-        description: "Не удалось сохранить сказку",
+        description: err.message || "Не удалось сохранить сказку",
         variant: "destructive",
       });
     } finally {

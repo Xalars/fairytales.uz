@@ -5,22 +5,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Star, Sparkles } from "lucide-react";
+import { BookOpen, Star, Sparkles, AlertTriangle, CheckCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Publish = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [moderating, setModerating] = useState(false);
+  const [moderationResult, setModerationResult] = useState<{
+    approved: boolean;
+    originalContent: string;
+    improvedContent: string;
+    message: string;
+  } | null>(null);
+  
   const { user, signOut } = useAuth();
   const { addUserFairytale } = useFairytales();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleModeration = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
@@ -42,9 +51,48 @@ const Publish = () => {
       return;
     }
 
+    setModerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('moderate-content', {
+        body: {
+          title: title.trim(),
+          content: content.trim()
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data.approved) {
+        toast({
+          title: "Сказка отклонена",
+          description: data.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setModerationResult(data);
+    } catch (err) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось проверить сказку",
+        variant: "destructive",
+      });
+    } finally {
+      setModerating(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!moderationResult || !user) return;
+
     setLoading(true);
     try {
-      const { error } = await addUserFairytale(title.trim(), content.trim(), user.id);
+      const { error } = await addUserFairytale(
+        title.trim(), 
+        moderationResult.improvedContent, 
+        user.id
+      );
       
       if (error) {
         toast({
@@ -59,6 +107,7 @@ const Publish = () => {
         });
         setTitle("");
         setContent("");
+        setModerationResult(null);
         navigate("/library");
       }
     } catch (err) {
@@ -150,63 +199,104 @@ const Publish = () => {
             </div>
           </div>
 
-          <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-2xl transform -rotate-1">
-            <CardHeader>
-              <CardTitle className="text-3xl font-bold text-purple-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                <Sparkles className="w-8 h-8 text-yellow-500" />
-                Создать новую сказку
-                <Sparkles className="w-8 h-8 text-yellow-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <Label htmlFor="title" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                    Название сказки 📖
-                  </Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="border-4 border-orange-200 rounded-2xl focus:border-orange-400 font-medium text-lg p-4"
-                    placeholder="Введите название вашей сказки..."
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="content" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                    Текст сказки 📝
-                  </Label>
-                  <Textarea
-                    id="content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    className="border-4 border-pink-200 rounded-2xl focus:border-pink-400 font-medium text-lg p-4 min-h-[300px]"
-                    placeholder="Жили-были..."
-                    required
-                  />
-                </div>
-                <div className="flex gap-4 justify-center">
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
-                  >
-                    {loading ? "Публикация..." : "Опубликовать"}
-                  </Button>
-                  <Link to="/">
+          {!moderationResult ? (
+            <Card className="bg-white/90 backdrop-blur-sm border-4 border-purple-200 rounded-3xl shadow-2xl transform -rotate-1">
+              <CardHeader>
+                <CardTitle className="text-3xl font-bold text-purple-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  <Sparkles className="w-8 h-8 text-yellow-500" />
+                  Создать новую сказку
+                  <Sparkles className="w-8 h-8 text-yellow-500" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleModeration} className="space-y-6">
+                  <div>
+                    <Label htmlFor="title" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Название сказки 📖
+                    </Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="border-4 border-orange-200 rounded-2xl focus:border-orange-400 font-medium text-lg p-4"
+                      placeholder="Введите название вашей сказки..."
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="content" className="text-lg font-bold text-purple-700 mb-2 block" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Текст сказки 📝
+                    </Label>
+                    <Textarea
+                      id="content"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      className="border-4 border-pink-200 rounded-2xl focus:border-pink-400 font-medium text-lg p-4 min-h-[300px]"
+                      placeholder="Жили-были..."
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-4 justify-center">
                     <Button
-                      type="button"
-                      variant="outline"
-                      className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                      type="submit"
+                      disabled={moderating}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
                     >
-                      Отмена
+                      {moderating ? "Проверка..." : "Проверить и опубликовать"}
                     </Button>
-                  </Link>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                    <Link to="/">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                      >
+                        Отмена
+                      </Button>
+                    </Link>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              <Card className="bg-white/90 backdrop-blur-sm border-4 border-green-200 rounded-3xl shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-3xl font-bold text-green-800 text-center flex items-center justify-center gap-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                    {moderationResult.message}
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
+                    <h4 className="font-bold text-green-800 mb-3" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      Улучшенная версия:
+                    </h4>
+                    <div className="whitespace-pre-wrap text-green-800 font-medium leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                      {moderationResult.improvedContent}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 justify-center pt-4">
+                    <Button
+                      onClick={handlePublish}
+                      disabled={loading}
+                      className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-8 py-4 rounded-full border-4 border-green-300 shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                    >
+                      {loading ? "Публикация..." : "Опубликовать"}
+                    </Button>
+                    <Button
+                      onClick={() => setModerationResult(null)}
+                      variant="outline"
+                      className="border-4 border-purple-400 text-purple-700 hover:bg-purple-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-lg"
+                    >
+                      Редактировать
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>

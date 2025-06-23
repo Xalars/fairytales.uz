@@ -10,7 +10,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -22,28 +21,87 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Create a detailed prompt based on the parameters
-    const lengthInstruction = {
-      short: 'короткую (300-500 слов)',
-      medium: 'среднюю (500-800 слов)',
-      long: 'длинную (800-1200 слов)'
-    }[length] || 'среднюю';
+    // Language mapping for proper prompts
+    const languagePrompts = {
+      russian: {
+        systemPrompt: "Ты талантливый рассказчик узбекских народных сказок. Создай волшебную, добрую сказку на русском языке в стиле узбекского фольклора.",
+        lengthMap: {
+          short: "короткую (1-2 минуты чтения)",
+          medium: "среднюю (3-5 минут чтения)", 
+          long: "длинную (5-10 минут чтения)"
+        }
+      },
+      uzbek: {
+        systemPrompt: "Sen o'zbek xalq ertaklarining mohir hikoyachisissan. O'zbek folklori uslubida, uzbek tilida sehrli va mehribon ertak yarating.",
+        lengthMap: {
+          short: "qisqa (1-2 daqiqa o'qish)",
+          medium: "o'rta (3-5 daqiqa o'qish)",
+          long: "uzun (5-10 daqiqa o'qish)"
+        }
+      },
+      english: {
+        systemPrompt: "You are a talented storyteller of Uzbek folk tales. Create a magical, kind fairy tale in English in the style of Uzbek folklore.",
+        lengthMap: {
+          short: "short (1-2 minutes reading)",
+          medium: "medium (3-5 minutes reading)",
+          long: "long (5-10 minutes reading)"
+        }
+      }
+    };
 
-    const languageInstruction = {
-      russian: 'на русском языке',
-      uzbek: 'на узбекском языке',
-      english: 'на английском языке'
-    }[language] || 'на русском языке';
+    const selectedLanguage = languagePrompts[language] || languagePrompts.russian;
+    const lengthDescription = selectedLanguage.lengthMap[length] || selectedLanguage.lengthMap.medium;
 
-    const prompt = `Напиши ${lengthInstruction} сказку ${languageInstruction} со следующими параметрами:
+    let userPrompt = '';
     
+    if (language === 'uzbek') {
+      userPrompt = `Quyidagi parametrlar bo'yicha ${lengthDescription} ertak yarating:
+
+Bosh qahramon: ${protagonist}
+O'rin: ${setting}
+Mavzu: ${theme}
+
+Ertakda quyidagilar bo'lishi kerak:
+- Uzbek xalq ertaklari uslubi
+- Yaxshi va yomon o'rtasidagi kurash
+- Axloqiy saboq
+- Sehrli elementlar
+- Baxtli tugash
+
+Ertakni to'liq uzbek tilida yozing. Avval ertakning nomini bering, keyin to'liq matnini yozing.`;
+    } else if (language === 'english') {
+      userPrompt = `Create a ${lengthDescription} fairy tale with these parameters:
+
+Main character: ${protagonist}
+Setting: ${setting}
+Theme: ${theme}
+
+The fairy tale should include:
+- Uzbek folk tale style
+- Struggle between good and evil
+- Moral lesson
+- Magical elements
+- Happy ending
+
+Write the entire fairy tale in English. First provide the title, then the full story.`;
+    } else {
+      userPrompt = `Создай ${lengthDescription} сказку с такими параметрами:
+
 Главный герой: ${protagonist}
 Место действия: ${setting}
 Тема: ${theme}
 
-Сказка должна быть в традициях узбекского фольклора, с элементами магии и волшебства. Включи мораль или поучительный элемент. Сделай историю увлекательной для детей и взрослых.
+Сказка должна включать:
+- Стиль узбекских народных сказок
+- Борьбу добра со злом
+- Моральный урок
+- Волшебные элементы
+- Счастливый конец
 
-Начни с традиционного зачина "Жили-были..." и закончи традиционной концовкой.`;
+Напиши всю сказку на русском языке. Сначала дай название сказки, потом полный текст.`;
+    }
+
+    console.log(`Generating fairy tale in ${language}...`);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -54,67 +112,58 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { 
-            role: 'system', 
-            content: 'Ты - мастер сказочник, специализирующийся на узбекском фольклоре. Твоя задача - создавать красивые, поучительные сказки с элементами традиционной узбекской культуры.'
+          {
+            role: 'system',
+            content: selectedLanguage.systemPrompt
           },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.8,
-        max_tokens: 2000,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const generatedStory = data.choices[0].message.content;
-
-    // Generate a title based on the story content
-    const titleResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'Создай короткое, запоминающееся название для сказки. Название должно быть на том же языке, что и сказка.'
-          },
-          { 
-            role: 'user', 
-            content: `Создай название для этой сказки:\n\n${generatedStory.substring(0, 500)}...`
+          {
+            role: 'user',
+            content: userPrompt
           }
         ],
-        temperature: 0.7,
-        max_tokens: 50,
+        temperature: 0.8,
+        max_tokens: length === 'short' ? 1000 : length === 'medium' ? 2000 : 3000,
       }),
     });
 
-    const titleData = await titleResponse.json();
-    const generatedTitle = titleData.choices[0].message.content.replace(/['"«»]/g, '');
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Failed to generate fairy tale');
+    }
 
-    return new Response(JSON.stringify({ 
-      title: generatedTitle,
-      content: generatedStory,
-      parameters: {
-        protagonist,
-        setting,
-        theme,
-        length,
-        language
-      }
+    const generatedText = data.choices[0].message.content;
+    
+    // Extract title and content
+    const lines = generatedText.split('\n').filter(line => line.trim());
+    const title = lines[0].replace(/^(Название|Title|Sarlavha):\s*/i, '').replace(/^["«]|["»]$/g, '').trim();
+    const content = lines.slice(1).join('\n').trim();
+
+    const parameters = {
+      protagonist,
+      setting,
+      theme,
+      length,
+      language,
+      generatedAt: new Date().toISOString()
+    };
+
+    console.log(`Fairy tale generated successfully in ${language}`);
+
+    return new Response(JSON.stringify({
+      title,
+      content,
+      parameters
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
     console.error('Error in generate-fairytale function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: 'Ошибка при генерации сказки',
+      details: error.message 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

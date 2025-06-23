@@ -39,6 +39,7 @@ export const useFairytales = () => {
   const fetchFairytales = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Fetch from original Fairytales table (folk tales)
       console.log('Fetching folk tales from Fairytales table...');
@@ -49,31 +50,36 @@ export const useFairytales = () => {
 
       if (fairytalesError) {
         console.error('Error fetching folk tales:', fairytalesError);
-        throw fairytalesError;
+      } else {
+        console.log('Folk tales fetched successfully:', fairytalesData?.length || 0);
+        
+        // Process folk tales data to ensure consistent structure
+        const processedFairytales = (fairytalesData || []).map(tale => ({
+          ...tale,
+          content: tale.text_ru || tale.content || '',
+          like_count: tale.like_count || 0
+        }));
+        
+        setFairytales(processedFairytales);
       }
 
-      console.log('Folk tales fetched:', fairytalesData);
-      
-      // Process folk tales data to ensure consistent structure
-      const processedFairytales = (fairytalesData || []).map(tale => ({
-        ...tale,
-        content: tale.text_ru || tale.content || '', // Use text_ru as primary content
-        like_count: tale.like_count || 0
-      }));
-
       // Fetch from user_fairytales table (user-generated stories)
+      console.log('Fetching user fairytales...');
       const { data: userFairytalesData, error: userFairytalesError } = await supabase
         .from('user_fairytales')
         .select('*')
-        .eq('status', 'published') // Only show published stories
+        .eq('status', 'published')
         .order('created_at', { ascending: false });
 
       if (userFairytalesError) {
         console.error('Error fetching user fairytales:', userFairytalesError);
-        throw userFairytalesError;
+      } else {
+        console.log('User fairytales fetched successfully:', userFairytalesData?.length || 0);
+        setUserFairytales(userFairytalesData || []);
       }
 
       // Fetch from ai_fairytales table (AI-generated stories)
+      console.log('Fetching AI fairytales...');
       const { data: aiFairytalesData, error: aiFairytalesError } = await supabase
         .from('ai_fairytales')
         .select('*')
@@ -81,19 +87,10 @@ export const useFairytales = () => {
 
       if (aiFairytalesError) {
         console.error('Error fetching AI fairytales:', aiFairytalesError);
-        setAiFairytales([]);
       } else {
+        console.log('AI fairytales fetched successfully:', aiFairytalesData?.length || 0);
         setAiFairytales(aiFairytalesData || []);
       }
-
-      setFairytales(processedFairytales);
-      setUserFairytales(userFairytalesData || []);
-      
-      console.log('All data fetched successfully:', {
-        folkTales: processedFairytales.length,
-        userTales: (userFairytalesData || []).length,
-        aiTales: (aiFairytalesData || []).length
-      });
       
     } catch (err) {
       console.error('Error in fetchFairytales:', err);
@@ -117,7 +114,6 @@ export const useFairytales = () => {
 
       if (error) throw error;
       
-      // Refresh the list
       await fetchFairytales();
       return { data, error: null };
     } catch (err) {
@@ -127,26 +123,37 @@ export const useFairytales = () => {
 
   const addAIFairytale = async (title: string, content: string, parameters?: any) => {
     try {
+      console.log('Saving AI fairytale:', { title, content: content.substring(0, 100) + '...' });
+      
       const { data, error } = await supabase
         .from('ai_fairytales')
-        .insert([{ title, content, parameters }])
+        .insert([{ 
+          title: title.trim(), 
+          content: content.trim(), 
+          parameters: parameters || {},
+          language: parameters?.language || 'russian'
+        }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving AI fairytale:', error);
+        throw error;
+      }
       
-      // Refresh the list
+      console.log('AI fairytale saved successfully:', data);
       await fetchFairytales();
       return { data, error: null };
     } catch (err) {
+      console.error('Error in addAIFairytale:', err);
       return { data: null, error: err instanceof Error ? err.message : 'An error occurred' };
     }
   };
 
   return {
-    fairytales, // Folk tales from Fairytales table
-    userFairytales, // User-generated fairytales
-    aiFairytales, // AI-generated fairytales
+    fairytales,
+    userFairytales,
+    aiFairytales,
     loading,
     error,
     addUserFairytale,
