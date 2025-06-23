@@ -14,6 +14,7 @@ export interface Fairytale {
   type?: string;
   audio_url?: string;
   image_url?: string;
+  cover_image_url?: string;
   like_count?: number;
 }
 
@@ -25,6 +26,7 @@ export interface FolkFairytale {
   type?: string;
   audio_url?: string;
   image_url?: string;
+  cover_image_url?: string;
   like_count?: number;
   created_at: string;
   updated_at?: string;
@@ -39,6 +41,7 @@ export interface AIFairytale {
   updated_at: string;
   audio_url?: string;
   image_url?: string;
+  cover_image_url?: string;
   like_count?: number;
 }
 
