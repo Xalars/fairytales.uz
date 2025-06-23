@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Play, BookOpen, Pause } from "lucide-react";
+import { Heart, Play, BookOpen, Pause, Menu } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLikes } from "@/hooks/useLikes";
@@ -25,13 +24,14 @@ interface Story {
 
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
-  const { userLikes, isLiked } = useLikes();
+  const { userLikes, isLiked, refetch: refetchLikes } = useLikes();
   const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio } = useAudio();
   const navigate = useNavigate();
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [aiStories, setAiStories] = useState<Story[]>([]);
   const [likedStories, setLikedStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Only redirect if auth is not loading and user is definitely not authenticated
@@ -82,7 +82,7 @@ const Profile = () => {
         content: story.content,
         type: 'Авторские сказки',
         source: 'user_generated' as const,
-        image_url: story.image_url,
+        image_url: story.cover_image_url || story.image_url,
         audio_url: story.audio_url,
         like_count: story.like_count || 0,
         created_at: story.created_at
@@ -94,7 +94,7 @@ const Profile = () => {
         content: story.content,
         type: 'ИИ-сказки',
         source: 'ai_generated' as const,
-        image_url: story.image_url,
+        image_url: story.cover_image_url || story.image_url,
         audio_url: story.audio_url,
         like_count: story.like_count || 0,
         created_at: story.created_at
@@ -143,7 +143,7 @@ const Profile = () => {
             content: data.content,
             type: storyType,
             source: like.fairytale_type,
-            image_url: data.image_url,
+            image_url: data.cover_image_url || data.image_url,
             audio_url: data.audio_url,
             like_count: data.like_count || 0,
             created_at: data.created_at
@@ -182,7 +182,7 @@ const Profile = () => {
         <div className="absolute top-3 right-3">
           <Badge 
             variant="secondary" 
-            className={`font-bold rounded-full px-3 py-1 border-2 ${
+            className={`font-bold rounded-full px-2 py-1 text-xs border-2 ${
               story.type === 'Народные сказки' 
                 ? 'bg-purple-100 border-purple-300 text-purple-700'
                 : story.type === 'Опубликованные пользователями' || story.type === 'Авторские сказки'
@@ -195,49 +195,49 @@ const Profile = () => {
         </div>
       </div>
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+        <CardTitle className="text-lg md:text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
           {story.title}
         </CardTitle>
-        <CardDescription className="text-purple-600 font-medium">
+        <CardDescription className="text-purple-600 font-medium text-sm">
           {story.content ? story.content.substring(0, 100) + '...' : 'Содержание недоступно'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Link to={`/story/${story.source}/${story.id}`}>
-              <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium">
-                <BookOpen className="w-4 h-4 mr-1" />
+              <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium text-xs">
+                <BookOpen className="w-3 h-3 mr-1" />
                 Читать
               </Button>
             </Link>
             <Button 
               size="sm" 
               variant="outline" 
-              className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium"
+              className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium text-xs"
               onClick={() => handlePlayAudio(story)}
               disabled={isGenerating}
             >
               {isGenerating ? (
                 <>
-                  <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                  <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
                   Генерация...
                 </>
               ) : isPlaying ? (
                 <>
-                  <Pause className="w-4 h-4 mr-1" />
+                  <Pause className="w-3 h-3 mr-1" />
                   Стоп
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4 mr-1" />
+                  <Play className="w-3 h-3 mr-1" />
                   Слушать
                 </>
               )}
             </Button>
           </div>
           <div className="flex items-center text-pink-600">
-            <Heart className={`w-5 h-5 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
+            <Heart className={`w-4 h-4 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
             <span className="text-sm font-bold">{story.like_count}</span>
           </div>
         </div>
@@ -268,14 +268,16 @@ const Profile = () => {
       <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
-            <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
+            <BookOpen className="h-8 w-8 md:h-10 md:w-10 text-purple-600 transform rotate-12" />
             <div>
-              <h1 className="text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+              <h1 className="text-xl md:text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                 fAIrytales.uz
               </h1>
-              <p className="text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
+              <p className="text-xs md:text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
             </div>
           </Link>
+
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
               Каталог
@@ -290,20 +292,56 @@ const Profile = () => {
               Профиль
             </Link>
           </nav>
-          <Button 
-            onClick={handleSignOut}
-            variant="outline" 
-            className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-          >
-            Выйти
-          </Button>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="border-2 border-purple-400 text-purple-700"
+            >
+              <Menu className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Desktop Auth Button */}
+          <div className="hidden md:flex">
+            <Button 
+              onClick={handleSignOut}
+              variant="outline" 
+              className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+            >
+              Выйти
+            </Button>
+          </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-orange-200 bg-white/95 backdrop-blur-sm">
+            <nav className="flex items-center space-x-6">
+              <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+                Каталог
+              </Link>
+              <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+                Опубликовать сказку
+              </Link>
+              <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+                ИИ-сказки
+              </Link>
+              <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">
+                Профиль
+              </Link>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h2 className="text-5xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+          <h2 className="text-3xl md:text-5xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
             Мой Профиль 👤
           </h2>
           <div className="w-32 h-2 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full mx-auto"></div>
@@ -311,13 +349,13 @@ const Profile = () => {
 
         <Tabs defaultValue="liked" className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-white/80 backdrop-blur-sm rounded-full border-4 border-orange-200 p-2 mb-8">
-            <TabsTrigger value="liked" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800">
+            <TabsTrigger value="liked" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800 text-xs md:text-sm">
               ❤️ Любимое ({likedStories.length})
             </TabsTrigger>
-            <TabsTrigger value="ai-stories" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-green-100 data-[state=active]:text-green-800">
+            <TabsTrigger value="ai-stories" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs md:text-sm">
               🤖 Мои ИИ-сказки ({aiStories.length})
             </TabsTrigger>
-            <TabsTrigger value="user-stories" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800">
+            <TabsTrigger value="user-stories" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800 text-xs md:text-sm">
               ✍️ Мои авторские сказки ({userStories.length})
             </TabsTrigger>
           </TabsList>
@@ -328,7 +366,7 @@ const Profile = () => {
                 <p className="text-purple-700 font-medium text-lg">Загрузка...</p>
               </div>
             ) : likedStories.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
                 {likedStories.map(renderStoryCard)}
               </div>
             ) : (
@@ -348,7 +386,7 @@ const Profile = () => {
                 <p className="text-purple-700 font-medium text-lg">Загрузка...</p>
               </div>
             ) : aiStories.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
                 {aiStories.map(renderStoryCard)}
               </div>
             ) : (
@@ -373,7 +411,7 @@ const Profile = () => {
                 <p className="text-purple-700 font-medium text-lg">Загрузка...</p>
               </div>
             ) : userStories.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
                 {userStories.map(renderStoryCard)}
               </div>
             ) : (

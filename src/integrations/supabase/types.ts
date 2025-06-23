@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           audio_url: string | null
           content: string
+          cover_image_url: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           audio_url?: string | null
           content: string
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -37,6 +39,7 @@ export type Database = {
         Update: {
           audio_url?: string | null
           content?: string
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -88,6 +91,7 @@ export type Database = {
         Row: {
           audio_url: string | null
           content: string
+          cover_image_url: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -100,6 +104,7 @@ export type Database = {
         Insert: {
           audio_url?: string | null
           content: string
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -112,6 +117,7 @@ export type Database = {
         Update: {
           audio_url?: string | null
           content?: string
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -179,6 +185,7 @@ export type Database = {
           audio_url: string | null
           author_id: string | null
           content: string
+          cover_image_url: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -193,6 +200,7 @@ export type Database = {
           audio_url?: string | null
           author_id?: string | null
           content: string
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -207,6 +215,7 @@ export type Database = {
           audio_url?: string | null
           author_id?: string | null
           content?: string
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
