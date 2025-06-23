@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,10 +14,11 @@ const Library = () => {
   const { user, signOut } = useAuth();
   const { fairytales, userFairytales, aiFairytales, loading, refetch } = useFairytales();
   const { toggleLike, isLiked } = useLikes();
-  const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio } = useAudio();
+  const { generateAndPlayAudio, stopAudio, isCurrentlyPlaying, isCurrentlyGenerating } = useAudio();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [likingStories, setLikingStories] = useState<Set<string>>(new Set());
 
   // Combine all stories with proper typing
   const allStories = [
@@ -73,13 +73,30 @@ const Library = () => {
   };
 
   const handleLike = async (storyId: string, source: 'folk' | 'user_generated' | 'ai_generated') => {
-    await toggleLike(storyId, source);
-    // Refetch stories to get updated like counts
-    await refetch();
+    if (!user) return;
+    
+    const storyKey = `${source}-${storyId}`;
+    if (likingStories.has(storyKey)) return; // Prevent double-clicking
+
+    setLikingStories(prev => new Set(prev).add(storyKey));
+    
+    try {
+      await toggleLike(storyId, source);
+      // Force a refetch to get updated like counts from the database
+      await refetch();
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setLikingStories(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(storyKey);
+        return newSet;
+      });
+    }
   };
 
   const handlePlayAudio = async (story: any) => {
-    if (isPlaying) {
+    if (isCurrentlyPlaying(story.id)) {
       stopAudio();
     } else {
       await generateAndPlayAudio(story.content, story.id, story.source, story.audio_url);
@@ -142,14 +159,23 @@ const Library = () => {
                 Выйти
               </Button>
             ) : (
-              <Link to="/auth">
-                <Button 
-                  variant="outline" 
-                  className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                >
-                  Войти
-                </Button>
-              </Link>
+              <div className="flex items-center space-x-3">
+                <Link to="/auth">
+                  <Button 
+                    variant="outline" 
+                    className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                  >
+                    Войти
+                  </Button>
+                </Link>
+                <Link to="/auth?mode=signup">
+                  <Button 
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                  >
+                    Зарегистрироваться
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
         </div>
@@ -181,14 +207,23 @@ const Library = () => {
                   Выйти
                 </Button>
               ) : (
-                <Link to="/auth" className="block">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
-                  >
-                    Войти
-                  </Button>
-                </Link>
+                <div className="space-y-2">
+                  <Link to="/auth" className="block">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+                    >
+                      Войти
+                    </Button>
+                  </Link>
+                  <Link to="/auth?mode=signup" className="block">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium"
+                    >
+                      Зарегистрироваться
+                    </Button>
+                  </Link>
+                </div>
               )}
             </div>
           </div>
@@ -261,87 +296,92 @@ const Library = () => {
           </div>
         ) : filteredStories.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {filteredStories.map((story) => (
-              <Card key={`${story.source}-${story.id}`} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
-                <div className="relative overflow-hidden">
-                  <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
-                    {story.image_url ? (
-                      <img src={story.image_url} alt={story.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <BookOpen className="w-16 h-16 text-white opacity-80" />
-                    )}
+            {filteredStories.map((story) => {
+              const storyKey = `${story.source}-${story.id}`;
+              const isCurrentlyLiking = likingStories.has(storyKey);
+              
+              return (
+                <Card key={storyKey} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
+                  <div className="relative overflow-hidden">
+                    <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+                      {story.image_url ? (
+                        <img src={story.image_url} alt={story.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <BookOpen className="w-16 h-16 text-white opacity-80" />
+                      )}
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <Badge 
+                        variant="secondary" 
+                        className={`font-bold rounded-full px-2 py-1 text-xs border-2 ${
+                          story.type === 'Народные сказки' 
+                            ? 'bg-purple-100 border-purple-300 text-purple-700'
+                            : story.type === 'Опубликованные пользователями'
+                            ? 'bg-orange-100 border-orange-300 text-orange-700'
+                            : 'bg-green-100 border-green-300 text-green-700'
+                        }`}
+                      >
+                        {story.type}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="absolute top-3 right-3">
-                    <Badge 
-                      variant="secondary" 
-                      className={`font-bold rounded-full px-2 py-1 text-xs border-2 ${
-                        story.type === 'Народные сказки' 
-                          ? 'bg-purple-100 border-purple-300 text-purple-700'
-                          : story.type === 'Опубликованные пользователями'
-                          ? 'bg-orange-100 border-orange-300 text-orange-700'
-                          : 'bg-green-100 border-green-300 text-green-700'
-                      }`}
-                    >
-                      {story.type}
-                    </Badge>
-                  </div>
-                </div>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg md:text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                    {story.title}
-                  </CardTitle>
-                  <CardDescription className="text-purple-600 font-medium text-sm">
-                    {story.content ? story.content.substring(0, 100) + '...' : 'Содержание недоступно'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                    <div className="flex gap-2 flex-wrap">
-                      <Link to={`/story/${story.source}/${story.id}`}>
-                        <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium text-xs">
-                          <BookOpen className="w-3 h-3 mr-1" />
-                          Читать
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg md:text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                      {story.title}
+                    </CardTitle>
+                    <CardDescription className="text-purple-600 font-medium text-sm">
+                      {story.content ? story.content.substring(0, 100) + '...' : 'Содержание недоступно'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <Link to={`/story/${story.source}/${story.id}`}>
+                          <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium text-xs">
+                            <BookOpen className="w-3 h-3 mr-1" />
+                            Читать
+                          </Button>
+                        </Link>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium text-xs"
+                          onClick={() => handlePlayAudio(story)}
+                          disabled={isCurrentlyGenerating(story.id)}
+                        >
+                          {isCurrentlyGenerating(story.id) ? (
+                            <>
+                              <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                              Генерация...
+                            </>
+                          ) : isCurrentlyPlaying(story.id) ? (
+                            <>
+                              <Pause className="w-3 h-3 mr-1" />
+                              Стоп
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3 h-3 mr-1" />
+                              Слушать
+                            </>
+                          )}
                         </Button>
-                      </Link>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium text-xs"
-                        onClick={() => handlePlayAudio(story)}
-                        disabled={isGenerating}
-                      >
-                        {isGenerating ? (
-                          <>
-                            <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
-                            Генерация...
-                          </>
-                        ) : isPlaying ? (
-                          <>
-                            <Pause className="w-3 h-3 mr-1" />
-                            Стоп
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-3 h-3 mr-1" />
-                            Слушать
-                          </>
-                        )}
-                      </Button>
+                      </div>
+                      <div className="flex items-center text-pink-600">
+                        <button
+                          onClick={() => handleLike(story.id, story.source)}
+                          className="flex items-center hover:scale-110 transition-transform disabled:opacity-50"
+                          disabled={!user || isCurrentlyLiking}
+                        >
+                          <Heart className={`w-4 h-4 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
+                          <span className="text-sm font-bold">{story.like_count}</span>
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center text-pink-600">
-                      <button
-                        onClick={() => handleLike(story.id, story.source)}
-                        className="flex items-center hover:scale-110 transition-transform"
-                        disabled={!user}
-                      >
-                        <Heart className={`w-4 h-4 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
-                        <span className="text-sm font-bold">{story.like_count}</span>
-                      </button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">

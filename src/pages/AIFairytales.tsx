@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Star, Sparkles, Wand2, Save } from "lucide-react";
+import { BookOpen, Star, Sparkles, Wand2, Save, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
@@ -22,6 +22,7 @@ const AIFairytales = () => {
   const [loading, setLoading] = useState(false);
   const [generatedStory, setGeneratedStory] = useState<{title: string, content: string, parameters?: any} | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const { user, signOut } = useAuth();
   const { addAIFairytale } = useFairytales();
@@ -79,14 +80,30 @@ const AIFairytales = () => {
   const handleSave = async () => {
     if (!generatedStory) return;
     
+    if (!user) {
+      toast({
+        title: "Ошибка",
+        description: "Необходимо войти в систему для сохранения сказки",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSaving(true);
     try {
-      console.log('Saving AI fairytale:', generatedStory);
+      console.log('Saving AI fairytale:', { title: generatedStory.title, contentLength: generatedStory.content.length });
       
-      const { error } = await addAIFairytale(
+      const { data, error } = await addAIFairytale(
         generatedStory.title,
         generatedStory.content,
-        generatedStory.parameters
+        {
+          ...generatedStory.parameters,
+          protagonist,
+          setting,
+          theme,
+          length,
+          language
+        }
       );
 
       if (error) {
@@ -139,40 +156,127 @@ const AIFairytales = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
             <div className="relative">
-              <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
-              <Star className="absolute -top-1 -right-1 h-4 w-4 text-yellow-400 fill-current" />
+              <BookOpen className="h-8 w-8 md:h-10 md:w-10 text-purple-600 transform rotate-12" />
+              <Star className="absolute -top-1 -right-1 h-3 w-3 md:h-4 md:w-4 text-yellow-400 fill-current" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+              <h1 className="text-xl md:text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                 fAIrytales.uz
               </h1>
-              <p className="text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
+              <p className="text-xs md:text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
             </div>
           </Link>
+
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">Каталог</Link>
-            <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">Опубликовать сказку</Link>
-            <Link to="/ai-fairytales" className="text-orange-600 font-bold px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">ИИ-сказки</Link>
+            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+              Каталог
+            </Link>
+            <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+              Опубликовать сказку
+            </Link>
+            <Link to="/ai-fairytales" className="text-orange-600 font-bold px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">
+              ИИ-сказки
+            </Link>
+            {user && (
+              <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+                Профиль
+              </Link>
+            )}
           </nav>
-          {user ? (
-            <Button 
-              onClick={handleSignOut}
-              variant="outline" 
-              className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="border-2 border-purple-400 text-purple-700"
             >
-              Выйти
+              <Menu className="w-4 h-4" />
             </Button>
-          ) : (
-            <Link to="/auth">
+          </div>
+
+          {/* Desktop Auth Buttons */}
+          <div className="hidden md:flex">
+            {user ? (
               <Button 
+                onClick={handleSignOut}
                 variant="outline" 
                 className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
               >
-                Войти
+                Выйти
               </Button>
-            </Link>
-          )}
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Link to="/auth">
+                  <Button 
+                    variant="outline" 
+                    className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                  >
+                    Войти
+                  </Button>
+                </Link>
+                <Link to="/auth?mode=signup">
+                  <Button 
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                  >
+                    Зарегистрироваться
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-orange-200 bg-white/95 backdrop-blur-sm">
+            <div className="container mx-auto px-4 py-4 space-y-2">
+              <Link to="/library" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+                Каталог
+              </Link>
+              <Link to="/publish" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+                Опубликовать сказку
+              </Link>
+              <Link to="/ai-fairytales" className="block text-orange-600 font-bold px-3 py-2 rounded-full border-2 border-orange-300 bg-orange-50 text-center">
+                ИИ-сказки
+              </Link>
+              {user && (
+                <Link to="/profile" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+                  Профиль
+                </Link>
+              )}
+              {user ? (
+                <Button 
+                  onClick={handleSignOut}
+                  variant="outline" 
+                  className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+                >
+                  Выйти
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <Link to="/auth" className="block">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+                    >
+                      Войти
+                    </Button>
+                  </Link>
+                  <Link to="/auth?mode=signup" className="block">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium"
+                    >
+                      Зарегистрироваться
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="container mx-auto px-4 py-8">

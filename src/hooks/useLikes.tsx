@@ -17,7 +17,10 @@ export const useLikes = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchUserLikes = async () => {
-    if (!user) return;
+    if (!user) {
+      setUserLikes([]);
+      return;
+    }
     
     try {
       setLoading(true);
@@ -27,6 +30,7 @@ export const useLikes = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+      console.log('Fetched user likes:', data?.length || 0);
       setUserLikes(data || []);
     } catch (error) {
       console.error('Error fetching user likes:', error);
@@ -36,7 +40,10 @@ export const useLikes = () => {
   };
 
   const toggleLike = async (fairytaleId: string, fairytaleType: 'folk' | 'user_generated' | 'ai_generated') => {
-    if (!user) return false;
+    if (!user) {
+      console.log('User not authenticated, cannot toggle like');
+      return false;
+    }
 
     try {
       const existingLike = userLikes.find(
@@ -44,7 +51,8 @@ export const useLikes = () => {
       );
 
       if (existingLike) {
-        // Unlike
+        // Unlike - remove from database
+        console.log('Removing like:', existingLike.id);
         const { error } = await supabase
           .from('likes')
           .delete()
@@ -52,11 +60,13 @@ export const useLikes = () => {
 
         if (error) throw error;
         
-        // Update local state immediately
+        // Update local state immediately for better UX
         setUserLikes(prev => prev.filter(like => like.id !== existingLike.id));
+        console.log('Successfully removed like');
         return false;
       } else {
-        // Like
+        // Like - add to database
+        console.log('Adding like for:', fairytaleId, fairytaleType);
         const { data, error } = await supabase
           .from('likes')
           .insert([{
@@ -69,8 +79,9 @@ export const useLikes = () => {
 
         if (error) throw error;
         
-        // Update local state immediately
+        // Update local state immediately for better UX
         setUserLikes(prev => [...prev, data]);
+        console.log('Successfully added like:', data);
         return true;
       }
     } catch (error) {
@@ -87,7 +98,7 @@ export const useLikes = () => {
 
   useEffect(() => {
     fetchUserLikes();
-  }, [user]);
+  }, [user?.id]);
 
   return {
     userLikes,

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,6 +43,7 @@ export interface AIFairytale {
   image_url?: string;
   cover_image_url?: string;
   like_count?: number;
+  created_by_user_id?: string;
 }
 
 export const useFairytales = () => {
@@ -133,31 +133,43 @@ export const useFairytales = () => {
 
   const addAIFairytale = async (title: string, content: string, parameters?: any) => {
     try {
-      console.log('Saving AI fairytale:', { title, content: content.substring(0, 100) + '...' });
+      console.log('Saving AI fairytale:', { title: title.substring(0, 50) + '...', contentLength: content.length });
       
+      if (!user) {
+        throw new Error('User must be authenticated to save AI fairytales');
+      }
+
+      const fairytaleData = { 
+        title: title.trim(), 
+        content: content.trim(), 
+        parameters: parameters || {},
+        language: parameters?.language || 'russian',
+        created_by_user_id: user.id
+      };
+
+      console.log('Inserting AI fairytale data:', fairytaleData);
+
       const { data, error } = await supabase
         .from('ai_fairytales')
-        .insert([{ 
-          title: title.trim(), 
-          content: content.trim(), 
-          parameters: parameters || {},
-          language: parameters?.language || 'russian',
-          created_by_user_id: user?.id || null
-        }])
+        .insert([fairytaleData])
         .select()
         .single();
 
       if (error) {
-        console.error('Error saving AI fairytale:', error);
+        console.error('Supabase error saving AI fairytale:', error);
         throw error;
       }
       
       console.log('AI fairytale saved successfully:', data);
+      
+      // Refresh the fairytales list
       await fetchFairytales();
+      
       return { data, error: null };
     } catch (err) {
       console.error('Error in addAIFairytale:', err);
-      return { data: null, error: err instanceof Error ? err.message : 'An error occurred' };
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while saving the fairytale';
+      return { data: null, error: errorMessage };
     }
   };
 
