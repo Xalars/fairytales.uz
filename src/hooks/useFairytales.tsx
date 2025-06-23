@@ -112,6 +112,17 @@ export const useFairytales = () => {
 
   useEffect(() => {
     fetchFairytales();
+    
+    // Listen for like updates to refetch data
+    const handleLikesUpdated = () => {
+      fetchFairytales();
+    };
+    
+    window.addEventListener('likesUpdated', handleLikesUpdated);
+    
+    return () => {
+      window.removeEventListener('likesUpdated', handleLikesUpdated);
+    };
   }, []);
 
   const addUserFairytale = async (title: string, content: string, authorId: string) => {
@@ -137,6 +148,10 @@ export const useFairytales = () => {
       
       if (!user) {
         throw new Error('User must be authenticated to save AI fairytales');
+      }
+
+      if (!title || !content) {
+        throw new Error('Title and content are required');
       }
 
       const fairytaleData = { 

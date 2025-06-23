@@ -35,8 +35,8 @@ export const useAudio = () => {
           setCurrentAudio(null);
         };
         
-        audio.onerror = () => {
-          console.error('Error playing existing audio');
+        audio.onerror = (e) => {
+          console.error('Error playing existing audio:', e);
           setIsPlaying(false);
           setCurrentStoryId(null);
           setCurrentAudio(null);
@@ -49,7 +49,7 @@ export const useAudio = () => {
       // Generate new audio
       setIsGenerating(true);
       setCurrentStoryId(storyId);
-      console.log('Generating audio for story:', storyId);
+      console.log('Generating audio for story:', storyId, 'type:', storyType);
 
       const { data, error } = await supabase.functions.invoke('generate-audio', {
         body: {
@@ -59,10 +59,28 @@ export const useAudio = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Audio generation error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No data returned from audio generation');
+      }
+
+      console.log('Audio generation response:', data);
 
       // Play the generated audio
-      const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+      let audioUrl = '';
+      if (data.audioUrl) {
+        audioUrl = data.audioUrl;
+      } else if (data.audioContent) {
+        audioUrl = `data:audio/mp3;base64,${data.audioContent}`;
+      } else {
+        throw new Error('No audio URL or content received');
+      }
+
+      const audio = new Audio(audioUrl);
       setCurrentAudio(audio);
       setIsPlaying(true);
       
@@ -72,8 +90,8 @@ export const useAudio = () => {
         setCurrentAudio(null);
       };
       
-      audio.onerror = () => {
-        console.error('Error playing generated audio');
+      audio.onerror = (e) => {
+        console.error('Error playing generated audio:', e);
         setIsPlaying(false);
         setCurrentStoryId(null);
         setCurrentAudio(null);
@@ -87,6 +105,7 @@ export const useAudio = () => {
       setIsPlaying(false);
       setCurrentStoryId(null);
       setCurrentAudio(null);
+      throw error; // Re-throw so components can handle the error
     } finally {
       setIsGenerating(false);
     }

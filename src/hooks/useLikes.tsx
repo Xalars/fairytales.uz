@@ -29,7 +29,11 @@ export const useLikes = () => {
         .select('*')
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user likes:', error);
+        throw error;
+      }
+      
       console.log('Fetched user likes:', data?.length || 0);
       setUserLikes(data || []);
     } catch (error) {
@@ -58,11 +62,20 @@ export const useLikes = () => {
           .delete()
           .eq('id', existingLike.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error removing like:', error);
+          throw error;
+        }
         
         // Update local state immediately for better UX
         setUserLikes(prev => prev.filter(like => like.id !== existingLike.id));
         console.log('Successfully removed like');
+        
+        // Trigger a refetch to update like counts everywhere
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('likesUpdated'));
+        }, 100);
+        
         return false;
       } else {
         // Like - add to database
@@ -77,11 +90,20 @@ export const useLikes = () => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error adding like:', error);
+          throw error;
+        }
         
         // Update local state immediately for better UX
         setUserLikes(prev => [...prev, data]);
         console.log('Successfully added like:', data);
+        
+        // Trigger a refetch to update like counts everywhere
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('likesUpdated'));
+        }, 100);
+        
         return true;
       }
     } catch (error) {

@@ -16,8 +16,10 @@ serve(async (req) => {
   try {
     const { text, storyId, storyType } = await req.json();
     
+    console.log('Audio generation request:', { storyId, storyType, textLength: text?.length });
+    
     if (!text || !storyId || !storyType) {
-      throw new Error('Missing required parameters');
+      throw new Error('Missing required parameters: text, storyId, or storyType');
     }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -32,6 +34,9 @@ serve(async (req) => {
 
     console.log('Generating audio for story:', storyId, storyType);
 
+    // Limit text length to prevent API errors
+    const textToSpeak = text.substring(0, 4000);
+
     // Generate audio using OpenAI TTS
     const ttsResponse = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
@@ -41,15 +46,16 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'tts-1',
-        input: text,
+        input: textToSpeak,
         voice: 'alloy',
         response_format: 'mp3'
       }),
     });
 
     if (!ttsResponse.ok) {
-      const error = await ttsResponse.text();
-      throw new Error(`OpenAI TTS error: ${error}`);
+      const errorText = await ttsResponse.text();
+      console.error('OpenAI TTS error:', errorText);
+      throw new Error(`OpenAI TTS error: ${errorText}`);
     }
 
     // Get audio buffer
@@ -57,7 +63,7 @@ serve(async (req) => {
     const audioFile = new Uint8Array(audioBuffer);
 
     // Upload to Supabase Storage
-    const fileName = `${storyType}_${storyId}.mp3`;
+    const fileName = `${storyType}_${storyId}_${Date.now()}.mp3`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('fairytale-audio')
       .upload(fileName, audioFile, {
@@ -76,6 +82,7 @@ serve(async (req) => {
       .getPublicUrl(fileName);
 
     const audioUrl = urlData.publicUrl;
+    console.log('Audio uploaded successfully:', audioUrl);
 
     // Update the story table with audio URL
     let tableName = '';
@@ -90,7 +97,7 @@ serve(async (req) => {
         tableName = 'ai_fairytales';
         break;
       default:
-        throw new Error('Invalid story type');
+        throw new Error(`Invalid story type: ${storyType}`);
     }
 
     const { error: updateError } = await supabase
@@ -103,10 +110,13 @@ serve(async (req) => {
       throw new Error(`Database update failed: ${updateError.message}`);
     }
 
-    console.log('Audio generated and saved successfully:', audioUrl);
+    console.log('Audio generated and saved successfully for story:', storyId);
 
     return new Response(
-      JSON.stringify({ audioUrl }),
+      JSON.stringify({ 
+        audioUrl: audioUrl,
+        audioContent: btoa(String.fromCharCode(...audioFile))
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
