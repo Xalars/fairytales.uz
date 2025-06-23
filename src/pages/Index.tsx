@@ -6,50 +6,65 @@ import { Heart, Play, BookOpen, Sparkles, Globe, Star, Moon } from "lucide-react
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
+import { useLikes } from "@/hooks/useLikes";
 
 const Index = () => {
   const { user, signOut } = useAuth();
   const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
+  const { toggleLike, isLiked } = useLikes();
 
-  // Combine all stories for featured section - take first 3 from each source
-  const featuredStories = [
-    ...fairytales.slice(0, 2).map((fairytale) => ({
-      id: fairytale.id,
-      title: fairytale.title || 'Народная сказка',
-      genre: "Народная сказка",
-      origin: "Узбекская",
-      language: fairytale.language || "Русский",
-      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
-      cover: fairytale.image_url || "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
-      content: fairytale.content || '',
-      source: 'folk'
-    })),
-    ...userFairytales.slice(0, 1).map((fairytale) => ({
-      id: fairytale.id,
-      title: fairytale.title || 'Пользовательская сказка',
-      genre: "Пользовательская",
-      origin: "Узбекская",
-      language: "Русский",
-      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
-      cover: fairytale.image_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
-      content: fairytale.content || '',
-      source: 'user_generated'
-    })),
-    ...aiFairytales.slice(0, 1).map((fairytale) => ({
-      id: fairytale.id,
-      title: fairytale.title || 'ИИ-сказка',
-      genre: "ИИ-сказка",
-      origin: "Сгенерированная",
-      language: "Русский",
-      likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
-      cover: fairytale.image_url || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
-      content: fairytale.content || '',
-      source: 'ai_generated'
-    }))
-  ].filter(story => story.content); // Only show stories with content
+  // Get top 3 stories by like count across all sources
+  const getTopStories = () => {
+    const allStories = [
+      ...fairytales.map((fairytale) => ({
+        id: fairytale.id,
+        title: fairytale.title || 'Народная сказка',
+        genre: "Народная сказка",
+        origin: "Узбекская",
+        language: fairytale.language || "Русский",
+        likes: fairytale.like_count || 0,
+        cover: fairytale.image_url || "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
+        content: fairytale.content || '',
+        source: 'folk' as const
+      })),
+      ...userFairytales.map((fairytale) => ({
+        id: fairytale.id,
+        title: fairytale.title || 'Пользовательская сказка',
+        genre: "Пользовательская",
+        origin: "Узбекская",
+        language: "Русский",
+        likes: fairytale.like_count || 0,
+        cover: fairytale.image_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
+        content: fairytale.content || '',
+        source: 'user_generated' as const
+      })),
+      ...aiFairytales.map((fairytale) => ({
+        id: fairytale.id,
+        title: fairytale.title || 'ИИ-сказка',
+        genre: "ИИ-сказка",
+        origin: "Сгенерированная",
+        language: "Русский",
+        likes: fairytale.like_count || 0,
+        cover: fairytale.image_url || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
+        content: fairytale.content || '',
+        source: 'ai_generated' as const
+      }))
+    ].filter(story => story.content);
+
+    // Sort by like count descending and take top 3
+    return allStories
+      .sort((a, b) => b.likes - a.likes)
+      .slice(0, 3);
+  };
+
+  const featuredStories = getTopStories();
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleLike = async (storyId: string, source: 'folk' | 'user_generated' | 'ai_generated') => {
+    await toggleLike(storyId, source);
   };
 
   console.log('Index page - Featured stories:', featuredStories.length);
@@ -94,6 +109,11 @@ const Index = () => {
             <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
               ИИ-сказки
             </Link>
+            {user && (
+              <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+                Профиль
+              </Link>
+            )}
           </nav>
           {user ? (
             <Button 
@@ -218,7 +238,7 @@ const Index = () => {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div className="flex gap-2">
-                      <Link to="/library">
+                      <Link to={`/story/${story.source}/${story.id}`}>
                         <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium">
                           <BookOpen className="w-4 h-4 mr-1" />
                           Читать
@@ -230,8 +250,13 @@ const Index = () => {
                       </Button>
                     </div>
                     <div className="flex items-center text-pink-600">
-                      <Heart className="w-5 h-5 mr-1 fill-current" />
-                      <span className="text-sm font-bold">{story.likes}</span>
+                      <button
+                        onClick={() => handleLike(story.id, story.source)}
+                        className="flex items-center hover:scale-110 transition-transform"
+                      >
+                        <Heart className={`w-5 h-5 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
+                        <span className="text-sm font-bold">{story.likes}</span>
+                      </button>
                     </div>
                   </div>
                 </CardContent>

@@ -52,6 +52,9 @@ export const useLikes = () => {
 
         if (error) throw error;
         setUserLikes(prev => prev.filter(like => like.id !== existingLike.id));
+        
+        // Trigger a page refresh to update like counts
+        window.location.reload();
         return false;
       } else {
         // Like
@@ -67,6 +70,9 @@ export const useLikes = () => {
 
         if (error) throw error;
         setUserLikes(prev => [...prev, data]);
+        
+        // Trigger a page refresh to update like counts
+        window.location.reload();
         return true;
       }
     } catch (error) {

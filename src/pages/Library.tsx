@@ -1,10 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Play, BookOpen, Search, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,112 +12,66 @@ import { useLikes } from "@/hooks/useLikes";
 
 const Library = () => {
   const { user, signOut } = useAuth();
-  const { fairytales, userFairytales, aiFairytales, loading, error } = useFairytales();
+  const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
   const { toggleLike, isLiked } = useLikes();
-  
-  // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [showPreloaded, setShowPreloaded] = useState(true);
-  const [showUserGenerated, setShowUserGenerated] = useState(true);
-  const [showAIGenerated, setShowAIGenerated] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Combine all stories for display
-  const allStories = useMemo(() => {
-    const stories = [];
-    
-    console.log('Building stories list:', { 
-      fairytales: fairytales.length, 
-      userFairytales: userFairytales.length, 
-      aiFairytales: aiFairytales.length,
-      showPreloaded,
-      showUserGenerated,
-      showAIGenerated
-    });
-    
-    // Add folk tales (preloaded fairytales)
-    if (showPreloaded) {
-      const folkStories = fairytales.map(fairytale => ({
-        id: fairytale.id,
-        title: fairytale.title || 'Без названия',
-        content: fairytale.content || '',
-        type: 'Народные сказки',
-        source: 'folk' as const,
-        image_url: fairytale.image_url,
-        audio_url: fairytale.audio_url,
-        like_count: fairytale.like_count || 0
-      }));
-      stories.push(...folkStories);
-      console.log('Added folk stories:', folkStories.length);
-    }
-    
-    // Add user-generated fairytales
-    if (showUserGenerated) {
-      const userStories = userFairytales.map(fairytale => ({
-        id: fairytale.id,
-        title: fairytale.title || 'Без названия',
-        content: fairytale.content || '',
-        type: 'Опубликованные пользователями',
-        source: 'user_generated' as const,
-        image_url: fairytale.image_url,
-        audio_url: fairytale.audio_url,
-        like_count: fairytale.like_count || 0
-      }));
-      stories.push(...userStories);
-      console.log('Added user stories:', userStories.length);
-    }
-    
-    // Add AI-generated fairytales
-    if (showAIGenerated) {
-      const aiStories = aiFairytales.map(fairytale => ({
-        id: fairytale.id,
-        title: fairytale.title || 'Без названия',
-        content: fairytale.content || '',
-        type: 'ИИ-сказки',
-        source: 'ai_generated' as const,
-        image_url: fairytale.image_url,
-        audio_url: fairytale.audio_url,
-        like_count: fairytale.like_count || 0
-      }));
-      stories.push(...aiStories);
-      console.log('Added AI stories:', aiStories.length);
-    }
-    
-    console.log('Total stories:', stories.length);
-    return stories;
-  }, [fairytales, userFairytales, aiFairytales, showPreloaded, showUserGenerated, showAIGenerated]);
+  // Combine all stories with proper typing
+  const allStories = [
+    ...fairytales.map((fairytale) => ({
+      id: fairytale.id,
+      title: fairytale.title || 'Народная сказка',
+      content: fairytale.content || '',
+      type: "Народные сказки",
+      source: 'folk' as const,
+      image_url: fairytale.image_url,
+      audio_url: fairytale.audio_url,
+      like_count: fairytale.like_count || 0,
+      created_at: fairytale.created_at
+    })),
+    ...userFairytales.map((fairytale) => ({
+      id: fairytale.id,
+      title: fairytale.title || 'Пользовательская сказка',
+      content: fairytale.content || '',
+      type: "Опубликованные пользователями",
+      source: 'user_generated' as const,
+      image_url: fairytale.image_url,
+      audio_url: fairytale.audio_url,
+      like_count: fairytale.like_count || 0,
+      created_at: fairytale.created_at
+    })),
+    ...aiFairytales.map((fairytale) => ({
+      id: fairytale.id,
+      title: fairytale.title || 'ИИ-сказка',
+      content: fairytale.content || '',
+      type: "ИИ-сказки",
+      source: 'ai_generated' as const,
+      image_url: fairytale.image_url,
+      audio_url: fairytale.audio_url,
+      like_count: fairytale.like_count || 0,
+      created_at: fairytale.created_at
+    }))
+  ];
 
-  // Filter stories based on search term
-  const filteredStories = useMemo(() => {
-    return allStories.filter(story =>
-      story.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [allStories, searchTerm]);
+  // Filter stories based on search and category
+  const filteredStories = allStories.filter((story) => {
+    const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         story.content.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || 
+                           (selectedCategory === 'folk' && story.source === 'folk') ||
+                           (selectedCategory === 'user' && story.source === 'user_generated') ||
+                           (selectedCategory === 'ai' && story.source === 'ai_generated');
+    return matchesSearch && matchesCategory;
+  });
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  const handleLike = async (storyId: string, storySource: 'folk' | 'user_generated' | 'ai_generated') => {
-    if (!user) return;
-    await toggleLike(storyId, storySource);
+  const handleLike = async (storyId: string, source: 'folk' | 'user_generated' | 'ai_generated') => {
+    await toggleLike(storyId, source);
   };
-
-  const handlePreloadedChange = (checked: boolean | "indeterminate") => {
-    setShowPreloaded(checked === true);
-  };
-
-  const handleUserGeneratedChange = (checked: boolean | "indeterminate") => {
-    setShowUserGenerated(checked === true);
-  };
-
-  const handleAIGeneratedChange = (checked: boolean | "indeterminate") => {
-    setShowAIGenerated(checked === true);
-  };
-
-  // Show error if there's an issue
-  if (error) {
-    console.error('Library error:', error);
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100">
@@ -159,23 +112,14 @@ const Library = () => {
               Выйти
             </Button>
           ) : (
-            <div className="flex items-center space-x-3">
-              <Link to="/auth">
-                <Button 
-                  variant="outline" 
-                  className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                >
-                  Войти
-                </Button>
-              </Link>
-              <Link to="/auth?mode=signup">
-                <Button 
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                >
-                  Зарегистрироваться
-                </Button>
-              </Link>
-            </div>
+            <Link to="/auth">
+              <Button 
+                variant="outline" 
+                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+              >
+                Войти
+              </Button>
+            </Link>
           )}
         </div>
       </header>
@@ -189,75 +133,51 @@ const Library = () => {
           <div className="w-32 h-2 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full mx-auto"></div>
         </div>
 
-        {/* Search and Filter Section */}
+        {/* Search and Filter */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-6 mb-8 shadow-lg">
-          <div className="flex flex-col space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-500 w-5 h-5" />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-5 h-5" />
               <Input
-                type="text"
-                placeholder="Поиск по названию сказки..."
+                placeholder="Поиск сказок..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-2 border-purple-300 rounded-full py-3 text-purple-700 placeholder-purple-400 focus:border-orange-400 focus:ring-orange-400"
+                className="pl-10 border-2 border-purple-300 rounded-full bg-white/90 focus:border-purple-500"
               />
             </div>
-
-            {/* Filter Checkboxes with improved styling */}
-            <div className="flex flex-wrap gap-6 items-center">
-              <div className="flex items-center space-x-2">
-                <Filter className="w-5 h-5 text-purple-600" />
-                <span className="font-medium text-purple-700">Фильтры:</span>
-              </div>
-              
-              <div className="flex items-center space-x-2 bg-purple-50 rounded-full px-4 py-2 border-2 border-purple-200 hover:border-purple-400 transition-colors">
-                <Checkbox
-                  id="preloaded"
-                  checked={showPreloaded}
-                  onCheckedChange={handlePreloadedChange}
-                  className="border-2 border-purple-400 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 rounded-md"
-                />
-                <label htmlFor="preloaded" className="text-sm font-bold text-purple-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                  🏰 Народные сказки
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2 bg-orange-50 rounded-full px-4 py-2 border-2 border-orange-200 hover:border-orange-400 transition-colors">
-                <Checkbox
-                  id="user-generated"
-                  checked={showUserGenerated}
-                  onCheckedChange={handleUserGeneratedChange}
-                  className="border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500 rounded-md"
-                />
-                <label htmlFor="user-generated" className="text-sm font-bold text-orange-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                  ✍️ Опубликованные пользователями
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2 bg-green-50 rounded-full px-4 py-2 border-2 border-green-200 hover:border-green-400 transition-colors">
-                <Checkbox
-                  id="ai-generated"
-                  checked={showAIGenerated}
-                  onCheckedChange={handleAIGeneratedChange}
-                  className="border-2 border-green-400 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 rounded-md"
-                />
-                <label htmlFor="ai-generated" className="text-sm font-bold text-green-700 cursor-pointer" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                  🤖 ИИ-сказки
-                </label>
-              </div>
+            <div className="flex gap-2">
+              <Button
+                variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory('all')}
+                className="rounded-full border-2"
+              >
+                <Filter className="w-4 h-4 mr-1" />
+                Все
+              </Button>
+              <Button
+                variant={selectedCategory === 'folk' ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory('folk')}
+                className="rounded-full border-2"
+              >
+                Народные
+              </Button>
+              <Button
+                variant={selectedCategory === 'user' ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory('user')}
+                className="rounded-full border-2"
+              >
+                Пользовательские
+              </Button>
+              <Button
+                variant={selectedCategory === 'ai' ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory('ai')}
+                className="rounded-full border-2"
+              >
+                ИИ
+              </Button>
             </div>
           </div>
         </div>
-
-        {/* Debug info in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-4 bg-gray-100 rounded">
-            <p>Debug: Loading: {loading.toString()}, Error: {error || 'none'}</p>
-            <p>Folk tales: {fairytales.length}, User tales: {userFairytales.length}, AI tales: {aiFairytales.length}</p>
-            <p>Filtered stories: {filteredStories.length}</p>
-          </div>
-        )}
 
         {/* Stories Grid */}
         {loading ? (
@@ -315,28 +235,14 @@ const Library = () => {
                         </Button>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {user && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleLike(story.id, story.source)}
-                          className={`border-2 rounded-full font-medium ${
-                            isLiked(story.id, story.source)
-                              ? 'border-pink-400 bg-pink-100 text-pink-700'
-                              : 'border-pink-300 text-pink-700 hover:bg-pink-100'
-                          }`}
-                        >
-                          <Heart className={`w-4 h-4 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
-                          {story.like_count}
-                        </Button>
-                      )}
-                      {!user && (
-                        <div className="flex items-center text-pink-600">
-                          <Heart className="w-5 h-5 mr-1 fill-current" />
-                          <span className="text-sm font-bold">{story.like_count}</span>
-                        </div>
-                      )}
+                    <div className="flex items-center text-pink-600">
+                      <button
+                        onClick={() => handleLike(story.id, story.source)}
+                        className="flex items-center hover:scale-110 transition-transform"
+                      >
+                        <Heart className={`w-5 h-5 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
+                        <span className="text-sm font-bold">{story.like_count}</span>
+                      </button>
                     </div>
                   </div>
                 </CardContent>
@@ -347,19 +253,8 @@ const Library = () => {
           <div className="text-center py-12">
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-8 shadow-lg max-w-md mx-auto">
               <BookOpen className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-              <p className="text-purple-700 font-medium text-lg mb-4">
-                {searchTerm ? 'Сказки не найдены' : 'Выберите категории для отображения'}
-              </p>
-              {searchTerm && (
-                <p className="text-purple-500 text-sm">
-                  Попробуйте изменить поисковый запрос или настройки фильтра
-                </p>
-              )}
-              {error && (
-                <p className="text-red-500 text-sm mt-2">
-                  Ошибка загрузки: {error}
-                </p>
-              )}
+              <p className="text-purple-700 font-medium text-lg">Сказки не найдены</p>
+              <p className="text-purple-500 text-sm mt-2">Попробуйте изменить критерии поиска</p>
             </div>
           </div>
         )}
