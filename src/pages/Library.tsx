@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,9 +37,9 @@ const Library = () => {
       const folkStories = fairytales.map(fairytale => ({
         id: fairytale.id,
         title: fairytale.title || 'Без названия',
-        content: fairytale.content || fairytale.text_ru || '',
+        content: fairytale.content || '',
         type: 'Народные сказки',
-        source: 'preloaded',
+        source: 'folk',
         image_url: fairytale.image_url,
         audio_url: fairytale.audio_url,
         like_count: fairytale.like_count || 0

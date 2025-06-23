@@ -21,8 +21,8 @@ const Index = () => {
       language: fairytale.language || "Русский",
       likes: fairytale.like_count || Math.floor(Math.random() * 200) + 50,
       cover: fairytale.image_url || "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
-      content: fairytale.content || fairytale.text_ru || '',
-      source: 'preloaded'
+      content: fairytale.content || '',
+      source: 'folk'
     })),
     ...userFairytales.slice(0, 1).map((fairytale) => ({
       id: fairytale.id,

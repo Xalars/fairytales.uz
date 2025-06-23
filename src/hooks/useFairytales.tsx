@@ -17,6 +17,19 @@ export interface Fairytale {
   like_count?: number;
 }
 
+export interface FolkFairytale {
+  id: string;
+  title: string;
+  content: string;
+  language?: string;
+  type?: string;
+  audio_url?: string;
+  image_url?: string;
+  like_count?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface AIFairytale {
   id: string;
   title: string;
@@ -30,7 +43,7 @@ export interface AIFairytale {
 }
 
 export const useFairytales = () => {
-  const [fairytales, setFairytales] = useState<Fairytale[]>([]);
+  const [fairytales, setFairytales] = useState<FolkFairytale[]>([]);
   const [userFairytales, setUserFairytales] = useState<Fairytale[]>([]);
   const [aiFairytales, setAiFairytales] = useState<AIFairytale[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,26 +54,18 @@ export const useFairytales = () => {
       setLoading(true);
       setError(null);
       
-      // Fetch from original Fairytales table (folk tales)
-      console.log('Fetching folk tales from Fairytales table...');
-      const { data: fairytalesData, error: fairytalesError } = await supabase
-        .from('Fairytales')
+      // Fetch from new folk_fairytales table
+      console.log('Fetching folk tales from folk_fairytales table...');
+      const { data: folkFairytalesData, error: folkFairytalesError } = await supabase
+        .from('folk_fairytales')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (fairytalesError) {
-        console.error('Error fetching folk tales:', fairytalesError);
+      if (folkFairytalesError) {
+        console.error('Error fetching folk tales:', folkFairytalesError);
       } else {
-        console.log('Folk tales fetched successfully:', fairytalesData?.length || 0);
-        
-        // Process folk tales data to ensure consistent structure
-        const processedFairytales = (fairytalesData || []).map(tale => ({
-          ...tale,
-          content: tale.text_ru || tale.content || '',
-          like_count: tale.like_count || 0
-        }));
-        
-        setFairytales(processedFairytales);
+        console.log('Folk tales fetched successfully:', folkFairytalesData?.length || 0);
+        setFairytales(folkFairytalesData || []);
       }
 
       // Fetch from user_fairytales table (user-generated stories)

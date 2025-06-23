@@ -84,6 +84,45 @@ export type Database = {
         }
         Relationships: []
       }
+      folk_fairytales: {
+        Row: {
+          audio_url: string | null
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          language: string | null
+          like_count: number | null
+          title: string
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          language?: string | null
+          like_count?: number | null
+          title: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          language?: string | null
+          like_count?: number | null
+          title?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       likes: {
         Row: {
           created_at: string
