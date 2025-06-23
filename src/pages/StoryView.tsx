@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Heart, Play, BookOpen, Pause, Menu } from "lucide-react";
+import { ArrowLeft, Heart, Play, BookOpen, Pause } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLikes } from "@/hooks/useLikes";
@@ -29,7 +30,6 @@ const StoryView = () => {
   const [story, setStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(true);
   const [likeLoading, setLikeLoading] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchStory = async () => {
@@ -76,7 +76,7 @@ const StoryView = () => {
           content: data.content || '',
           type: storyType,
           source,
-          image_url: data.cover_image_url || data.image_url,
+          image_url: data.image_url,
           audio_url: data.audio_url,
           like_count: data.like_count || 0
         });
@@ -147,16 +147,14 @@ const StoryView = () => {
       <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
-            <BookOpen className="h-8 w-8 md:h-10 md:w-10 text-purple-600 transform rotate-12" />
+            <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
             <div>
-              <h1 className="text-xl md:text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+              <h1 className="text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                 fAIrytales.uz
               </h1>
-              <p className="text-xs md:text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
+              <p className="text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
             </div>
           </Link>
-
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
               Каталог
@@ -173,110 +171,34 @@ const StoryView = () => {
               </Link>
             )}
           </nav>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="border-2 border-purple-400 text-purple-700"
+          {user ? (
+            <Button 
+              onClick={handleSignOut}
+              variant="outline" 
+              className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
             >
-              <Menu className="w-4 h-4" />
+              Выйти
             </Button>
-          </div>
-
-          {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex">
-            {user ? (
-              <Button 
-                onClick={handleSignOut}
-                variant="outline" 
-                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-              >
-                Выйти
-              </Button>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <Link to="/auth">
-                  <Button 
-                    variant="outline" 
-                    className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                  >
-                    Войти
-                  </Button>
-                </Link>
-                <Link to="/auth?mode=signup">
-                  <Button 
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                  >
-                    Зарегистрироваться
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile Navigation Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-orange-200 bg-white/95 backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-              <Link to="/" className="flex items-center space-x-3">
-                <BookOpen className="h-8 w-8 md:h-10 md:w-10 text-purple-600 transform rotate-12" />
-                <div>
-                  <h1 className="text-xl md:text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
-                    fAIrytales.uz
-                  </h1>
-                  <p className="text-xs md:text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
-                </div>
-              </Link>
-              <nav className="hidden md:flex items-center space-x-6">
-                <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-                  Каталог
-                </Link>
-                <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-                  Опубликовать сказку
-                </Link>
-                <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-                  ИИ-сказки
-                </Link>
-                {user && (
-                  <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-                    Профиль
-                  </Link>
-                )}
-              </nav>
-              {user ? (
+          ) : (
+            <div className="flex items-center space-x-3">
+              <Link to="/auth">
                 <Button 
-                  onClick={handleSignOut}
                   variant="outline" 
                   className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
                 >
-                  Выйти
+                  Войти
                 </Button>
-              ) : (
-                <div className="flex items-center space-x-3">
-                  <Link to="/auth">
-                    <Button 
-                      variant="outline" 
-                      className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                    >
-                      Войти
-                    </Button>
-                  </Link>
-                  <Link to="/auth?mode=signup">
-                    <Button 
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                    >
-                      Зарегистрироваться
-                    </Button>
-                  </Link>
-                </div>
-              )}
+              </Link>
+              <Link to="/auth?mode=signup">
+                <Button 
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                >
+                  Зарегистрироваться
+                </Button>
+              </Link>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
@@ -286,7 +208,6 @@ const StoryView = () => {
           onClick={() => navigate('/library')}
           variant="outline"
           className="mb-6 border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium"
-          size="sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Назад к каталогу
@@ -296,20 +217,20 @@ const StoryView = () => {
         <Card className="bg-white border-4 border-orange-200 rounded-3xl overflow-hidden shadow-lg max-w-4xl mx-auto">
           {/* Story Image */}
           {story.image_url && (
-            <div className="w-full h-48 md:h-64 lg:h-80 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+            <div className="w-full h-64 md:h-80 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
               <img src={story.image_url} alt={story.title} className="w-full h-full object-cover" />
             </div>
           )}
 
           <CardHeader className="pb-4">
-            <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4">
+            <div className="flex items-start justify-between">
               <div className="flex-1">
-                <CardTitle className="text-2xl md:text-3xl lg:text-4xl text-purple-700 mb-2 font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                <CardTitle className="text-3xl md:text-4xl text-purple-700 mb-2 font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
                   {story.title}
                 </CardTitle>
                 <p className="text-purple-600 font-medium">{story.type}</p>
               </div>
-              <div className="flex items-center space-x-2 flex-wrap gap-2">
+              <div className="flex items-center space-x-2">
                 {user && (
                   <Button
                     onClick={handleLike}
@@ -355,7 +276,7 @@ const StoryView = () => {
           </CardHeader>
 
           <CardContent className="prose prose-purple max-w-none">
-            <div className="text-gray-700 leading-relaxed text-base md:text-lg whitespace-pre-wrap">
+            <div className="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">
               {story.content}
             </div>
           </CardContent>

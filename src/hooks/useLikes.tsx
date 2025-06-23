@@ -51,9 +51,10 @@ export const useLikes = () => {
           .eq('id', existingLike.id);
 
         if (error) throw error;
-        
-        // Update local state immediately
         setUserLikes(prev => prev.filter(like => like.id !== existingLike.id));
+        
+        // Trigger a page refresh to update like counts
+        window.location.reload();
         return false;
       } else {
         // Like
@@ -68,9 +69,10 @@ export const useLikes = () => {
           .single();
 
         if (error) throw error;
-        
-        // Update local state immediately
         setUserLikes(prev => [...prev, data]);
+        
+        // Trigger a page refresh to update like counts
+        window.location.reload();
         return true;
       }
     } catch (error) {
