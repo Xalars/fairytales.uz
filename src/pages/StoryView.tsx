@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Heart, Play, BookOpen, Pause, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from "@/hooks/useAuth";
 import { useLikes } from "@/hooks/useLikes";
 import { useAudio } from "@/hooks/useAudio";
 import { supabase } from '@/integrations/supabase/client';

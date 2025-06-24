@@ -8,16 +8,8 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     storage: localStorage,
     persistSession: true,
-    // Отключаем автоматическое обновление токенов для предотвращения rate limiting
-    autoRefreshToken: false,
+    autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce',
-    debug: false,
-  },
-  // Добавляем глобальные хедеры для идентификации
-  global: {
-    headers: {
-      'x-client-info': 'fairytales-app@1.0.0'
-    }
+    flowType: 'pkce'
   }
 })
