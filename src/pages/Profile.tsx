@@ -24,8 +24,8 @@ interface Story {
 
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
-  const { userLikes, isLiked, refetch: refetchLikes } = useLikes();
-  const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio } = useAudio();
+  const { userLikes, isLiked, toggleLike, getLikeCount } = useLikes();
+  const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio, isCurrentlyPlaying, isCurrentlyGenerating } = useAudio();
   const navigate = useNavigate();
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [aiStories, setAiStories] = useState<Story[]>([]);
@@ -162,11 +162,20 @@ const Profile = () => {
   };
 
   const handlePlayAudio = async (story: Story) => {
-    if (isPlaying) {
+    if (isCurrentlyPlaying(story.id)) {
       stopAudio();
     } else {
       await generateAndPlayAudio(story.content, story.id, story.source, story.audio_url);
     }
+  };
+
+  const handleLike = async (e: React.MouseEvent, story: Story) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) return;
+    
+    await toggleLike(story.id, story.source);
   };
 
   const renderStoryCard = (story: Story) => (
@@ -216,14 +225,14 @@ const Profile = () => {
               variant="outline" 
               className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium text-xs"
               onClick={() => handlePlayAudio(story)}
-              disabled={isGenerating}
+              disabled={isCurrentlyGenerating(story.id)}
             >
-              {isGenerating ? (
+              {isCurrentlyGenerating(story.id) ? (
                 <>
                   <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
                   Генерация...
                 </>
-              ) : isPlaying ? (
+              ) : isCurrentlyPlaying(story.id) ? (
                 <>
                   <Pause className="w-3 h-3 mr-1" />
                   Стоп
@@ -236,9 +245,16 @@ const Profile = () => {
               )}
             </Button>
           </div>
-          <div className="flex items-center text-pink-600">
-            <Heart className={`w-4 h-4 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
-            <span className="text-sm font-bold">{story.like_count}</span>
+          <div className="flex items-center">
+            <Button
+              onClick={(e) => handleLike(e, story)}
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto hover:bg-transparent"
+            >
+              <Heart className={`w-4 h-4 mr-1 text-pink-600 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
+              <span className="text-sm font-bold text-pink-600">{getLikeCount(story.id)}</span>
+            </Button>
           </div>
         </div>
       </CardContent>
@@ -320,20 +336,27 @@ const Profile = () => {
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-orange-200 bg-white/95 backdrop-blur-sm">
-            <nav className="flex items-center space-x-6">
-              <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+            <div className="container mx-auto px-4 py-4 space-y-2">
+              <Link to="/library" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
                 Каталог
               </Link>
-              <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+              <Link to="/publish" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
                 Опубликовать сказку
               </Link>
-              <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+              <Link to="/ai-fairytales" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
                 ИИ-сказки
               </Link>
-              <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">
+              <Link to="/profile" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-orange-300 bg-orange-50 text-center">
                 Профиль
               </Link>
-            </nav>
+              <Button 
+                onClick={handleSignOut}
+                variant="outline" 
+                className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+              >
+                Выйти
+              </Button>
+            </div>
           </div>
         )}
       </header>

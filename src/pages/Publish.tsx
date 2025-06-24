@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Star, Sparkles, AlertTriangle, CheckCircle } from "lucide-react";
+import { BookOpen, Star, Sparkles, CheckCircle, Menu } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
@@ -23,6 +22,7 @@ const Publish = () => {
     improvedContent: string;
     message: string;
   } | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const { user, signOut } = useAuth();
   const { addUserFairytale } = useFairytales();
@@ -151,39 +151,117 @@ const Publish = () => {
               <p className="text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
             </div>
           </Link>
+
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">Каталог</Link>
-            <Link to="/publish" className="text-orange-600 font-bold px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">Опубликовать сказку</Link>
-            <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">ИИ-сказки</Link>
+            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+              Каталог
+            </Link>
+            <Link to="/publish" className="text-orange-600 font-bold px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">
+              Опубликовать сказку
+            </Link>
+            <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+              ИИ-сказки
+            </Link>
+            {user && (
+              <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
+                Профиль
+              </Link>
+            )}
           </nav>
-          {user ? (
-            <Button 
-              onClick={handleSignOut}
-              variant="outline" 
-              className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="border-2 border-purple-400 text-purple-700"
             >
-              Выйти
+              <Menu className="w-4 h-4" />
             </Button>
-          ) : (
-            <div className="flex items-center space-x-3">
-              <Link to="/auth">
-                <Button 
-                  variant="outline" 
-                  className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                >
-                  Войти
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button 
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-                >
-                  Зарегистрироваться
-                </Button>
-              </Link>
-            </div>
-          )}
+          </div>
+
+          {/* Desktop Auth Buttons */}
+          <div className="hidden md:flex">
+            {user ? (
+              <Button 
+                onClick={handleSignOut}
+                variant="outline" 
+                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+              >
+                Выйти
+              </Button>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Link to="/auth">
+                  <Button 
+                    variant="outline" 
+                    className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                  >
+                    Войти
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button 
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                  >
+                    Зарегистрироваться
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-orange-200 bg-white/95 backdrop-blur-sm">
+            <div className="container mx-auto px-4 py-4 space-y-2">
+              <Link to="/library" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+                Каталог
+              </Link>
+              <Link to="/publish" className="block text-orange-600 font-bold px-3 py-2 rounded-full border-2 border-orange-300 bg-orange-50 text-center">
+                Опубликовать сказку
+              </Link>
+              <Link to="/ai-fairytales" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+                ИИ-сказки
+              </Link>
+              {user && (
+                <Link to="/profile" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+                  Профиль
+                </Link>
+              )}
+              {user ? (
+                <Button 
+                  onClick={handleSignOut}
+                  variant="outline" 
+                  className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+                >
+                  Выйти
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <Link to="/auth" className="block">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+                    >
+                      Войти
+                    </Button>
+                  </Link>
+                  <Link to="/auth" className="block">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium"
+                    >
+                      Зарегистрироваться
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="container mx-auto px-4 py-8">

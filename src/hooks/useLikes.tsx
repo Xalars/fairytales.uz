@@ -14,6 +14,7 @@ export interface Like {
 export const useLikes = () => {
   const { user } = useAuth();
   const [userLikes, setUserLikes] = useState<Like[]>([]);
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
 
   const fetchUserLikes = async () => {
@@ -43,6 +44,38 @@ export const useLikes = () => {
     }
   };
 
+  const fetchLikeCounts = async () => {
+    try {
+      // Fetch like counts for all stories
+      const { data: folkCounts, error: folkError } = await supabase
+        .from('folk_fairytales')
+        .select('id, like_count');
+
+      const { data: userCounts, error: userError } = await supabase
+        .from('user_fairytales')
+        .select('id, like_count');
+
+      const { data: aiCounts, error: aiError } = await supabase
+        .from('ai_fairytales')
+        .select('id, like_count');
+
+      if (folkError || userError || aiError) {
+        console.error('Error fetching like counts:', { folkError, userError, aiError });
+        return;
+      }
+
+      const counts: Record<string, number> = {};
+      
+      [...(folkCounts || []), ...(userCounts || []), ...(aiCounts || [])].forEach(story => {
+        counts[story.id] = story.like_count || 0;
+      });
+
+      setLikeCounts(counts);
+    } catch (error) {
+      console.error('Error fetching like counts:', error);
+    }
+  };
+
   const toggleLike = async (fairytaleId: string, fairytaleType: 'folk' | 'user_generated' | 'ai_generated') => {
     if (!user) {
       console.log('User not authenticated, cannot toggle like');
@@ -69,14 +102,11 @@ export const useLikes = () => {
         
         // Update local state immediately for better UX
         setUserLikes(prev => prev.filter(like => like.id !== existingLike.id));
+        setLikeCounts(prev => ({
+          ...prev,
+          [fairytaleId]: Math.max((prev[fairytaleId] || 1) - 1, 0)
+        }));
         console.log('Successfully removed like');
-        
-        // Trigger a custom event to update like counts everywhere
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('likesUpdated', {
-            detail: { fairytaleId, fairytaleType, action: 'unlike' }
-          }));
-        }, 100);
         
         return false;
       } else {
@@ -99,14 +129,11 @@ export const useLikes = () => {
         
         // Update local state immediately for better UX
         setUserLikes(prev => [...prev, data]);
+        setLikeCounts(prev => ({
+          ...prev,
+          [fairytaleId]: (prev[fairytaleId] || 0) + 1
+        }));
         console.log('Successfully added like:', data);
-        
-        // Trigger a custom event to update like counts everywhere
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('likesUpdated', {
-            detail: { fairytaleId, fairytaleType, action: 'like' }
-          }));
-        }, 100);
         
         return true;
       }
@@ -122,15 +149,37 @@ export const useLikes = () => {
     );
   };
 
+  const getLikeCount = (fairytaleId: string) => {
+    return likeCounts[fairytaleId] || 0;
+  };
+
   useEffect(() => {
     fetchUserLikes();
+    fetchLikeCounts();
   }, [user?.id]);
+
+  // Listen for like updates to refetch counts
+  useEffect(() => {
+    const handleLikesUpdated = () => {
+      fetchLikeCounts();
+    };
+    
+    window.addEventListener('likesUpdated', handleLikesUpdated);
+    
+    return () => {
+      window.removeEventListener('likesUpdated', handleLikesUpdated);
+    };
+  }, []);
 
   return {
     userLikes,
     loading,
     toggleLike,
     isLiked,
-    refetch: fetchUserLikes
+    getLikeCount,
+    refetch: () => {
+      fetchUserLikes();
+      fetchLikeCounts();
+    }
   };
 };

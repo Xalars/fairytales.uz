@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -142,7 +143,7 @@ export const useFairytales = () => {
     }
   };
 
-  const addAIFairytale = async (title: string, content: string, parameters?: any) => {
+  const addAIFairytale = async (title: string, content: string, parameters?: any, coverImageUrl?: string) => {
     try {
       console.log('Saving AI fairytale:', { title: title.substring(0, 50) + '...', contentLength: content.length });
       
@@ -159,7 +160,8 @@ export const useFairytales = () => {
         content: content.trim(), 
         parameters: parameters || {},
         language: parameters?.language || 'russian',
-        created_by_user_id: user.id
+        created_by_user_id: user.id,
+        cover_image_url: coverImageUrl || null
       };
 
       console.log('Inserting AI fairytale data:', fairytaleData);
