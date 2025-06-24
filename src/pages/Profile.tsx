@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Play, BookOpen, Pause, Menu } from "lucide-react";
+import { Heart, Play, BookOpen, Pause, Menu, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLikes } from "@/hooks/useLikes";
 import { useAudio } from "@/hooks/useAudio";
+import { useFairytales } from "@/hooks/useFairytales";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 
 interface Story {
@@ -26,6 +28,8 @@ const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { userLikes, isLiked, toggleLike, getLikeCount } = useLikes();
   const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio, isCurrentlyPlaying, isCurrentlyGenerating } = useAudio();
+  const { deleteUserFairytale, deleteAIFairytale } = useFairytales();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [aiStories, setAiStories] = useState<Story[]>([]);
@@ -178,6 +182,50 @@ const Profile = () => {
     await toggleLike(story.id, story.source);
   };
 
+  const handleDeleteStory = async (story: Story) => {
+    if (!confirm(`Вы уверены, что хотите удалить сказку "${story.title}"?`)) {
+      return;
+    }
+
+    try {
+      let result;
+      if (story.source === 'user_generated') {
+        result = await deleteUserFairytale(story.id);
+      } else if (story.source === 'ai_generated') {
+        result = await deleteAIFairytale(story.id);
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Нельзя удалить эту сказку",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (result.error) {
+        toast({
+          title: "Ошибка",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Успешно!",
+          description: "Сказка удалена",
+        });
+        // Refresh the data
+        await fetchUserData();
+      }
+    } catch (error) {
+      console.error('Error deleting story:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить сказку",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderStoryCard = (story: Story) => (
     <Card key={`${story.source}-${story.id}`} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
       <div className="relative overflow-hidden">
@@ -244,6 +292,17 @@ const Profile = () => {
                 </>
               )}
             </Button>
+            {(story.source === 'user_generated' || story.source === 'ai_generated') && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="border-2 border-red-300 text-red-700 hover:bg-red-100 rounded-full font-medium text-xs"
+                onClick={() => handleDeleteStory(story)}
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Удалить
+              </Button>
+            )}
           </div>
           <div className="flex items-center">
             <Button

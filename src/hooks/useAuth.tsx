@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,6 +7,7 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const tokenRefreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -33,29 +34,40 @@ export const useAuth = () => {
       }
     };
 
-    // Set up auth state listener
+    // Set up auth state listener with debounced token refresh handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
 
         console.log('Auth state changed:', event, session?.user?.email || 'No session');
         
-        // Only update state for meaningful events
+        // Handle different events appropriately
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
         }
         
-        // Don't update state for TOKEN_REFRESHED to prevent loops
+        // Debounce TOKEN_REFRESHED events to prevent loops
         if (event === 'TOKEN_REFRESHED' && session) {
-          // Only update if session actually changed
-          setSession(prevSession => {
-            if (prevSession?.access_token !== session.access_token) {
-              return session;
+          // Clear any existing timeout
+          if (tokenRefreshTimeoutRef.current) {
+            clearTimeout(tokenRefreshTimeoutRef.current);
+          }
+          
+          // Set a debounced update
+          tokenRefreshTimeoutRef.current = setTimeout(() => {
+            if (mounted) {
+              setSession(prevSession => {
+                // Only update if the access token actually changed
+                if (!prevSession || prevSession.access_token !== session.access_token) {
+                  console.log('Token refreshed, updating session');
+                  return session;
+                }
+                return prevSession;
+              });
             }
-            return prevSession;
-          });
+          }, 100); // 100ms debounce
         }
       }
     );
@@ -65,6 +77,9 @@ export const useAuth = () => {
 
     return () => {
       mounted = false;
+      if (tokenRefreshTimeoutRef.current) {
+        clearTimeout(tokenRefreshTimeoutRef.current);
+      }
       subscription.unsubscribe();
     };
   }, []);

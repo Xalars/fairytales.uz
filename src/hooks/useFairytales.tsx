@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -211,6 +210,70 @@ export const useFairytales = () => {
     }
   };
 
+  const deleteUserFairytale = async (fairytaleId: string) => {
+    try {
+      if (!user) {
+        throw new Error('User must be authenticated to delete fairytales');
+      }
+
+      console.log('Deleting user fairytale:', fairytaleId);
+
+      const { error } = await supabase
+        .from('user_fairytales')
+        .delete()
+        .eq('id', fairytaleId)
+        .eq('author_id', user.id); // Ensure only the author can delete
+
+      if (error) {
+        console.error('Supabase error deleting user fairytale:', error);
+        throw error;
+      }
+
+      console.log('User fairytale deleted successfully');
+      
+      // Refresh the fairytales list
+      await fetchFairytales();
+      
+      return { error: null };
+    } catch (err) {
+      console.error('Error in deleteUserFairytale:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while deleting the fairytale';
+      return { error: errorMessage };
+    }
+  };
+
+  const deleteAIFairytale = async (fairytaleId: string) => {
+    try {
+      if (!user) {
+        throw new Error('User must be authenticated to delete fairytales');
+      }
+
+      console.log('Deleting AI fairytale:', fairytaleId);
+
+      const { error } = await supabase
+        .from('ai_fairytales')
+        .delete()
+        .eq('id', fairytaleId)
+        .eq('created_by_user_id', user.id); // Ensure only the creator can delete
+
+      if (error) {
+        console.error('Supabase error deleting AI fairytale:', error);
+        throw error;
+      }
+
+      console.log('AI fairytale deleted successfully');
+      
+      // Refresh the fairytales list
+      await fetchFairytales();
+      
+      return { error: null };
+    } catch (err) {
+      console.error('Error in deleteAIFairytale:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while deleting the fairytale';
+      return { error: errorMessage };
+    }
+  };
+
   return {
     fairytales,
     userFairytales,
@@ -219,6 +282,8 @@ export const useFairytales = () => {
     error,
     addUserFairytale,
     addAIFairytale,
+    deleteUserFairytale,
+    deleteAIFairytale,
     refetch: fetchFairytales,
   };
 };
