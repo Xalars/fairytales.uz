@@ -10,6 +10,16 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    // Добавляем более консервативные настройки для предотвращения rate limiting
+    debug: false,
+    // Уменьшаем частоту проверок сессии
+    refreshTokenRetryAttempts: 2,
+  },
+  // Добавляем глобальные хедеры для rate limiting
+  global: {
+    headers: {
+      'x-client-info': 'fairytales-app@1.0.0'
+    }
   }
 })

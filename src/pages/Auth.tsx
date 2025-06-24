@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +16,16 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Перенаправляем аутентифицированных пользователей
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     if (mode === 'signup') {
@@ -118,6 +126,7 @@ const Auth = () => {
                   className="border-2 border-purple-200 rounded-full focus:border-purple-400 font-medium"
                   placeholder="ваш@email.com"
                   required
+                  disabled={loading}
                 />
               </div>
               <div>
@@ -130,6 +139,7 @@ const Auth = () => {
                   className="border-2 border-purple-200 rounded-full focus:border-purple-400 font-medium"
                   placeholder="••••••••"
                   required
+                  disabled={loading}
                 />
               </div>
               <Button
@@ -144,6 +154,7 @@ const Auth = () => {
               <button
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-purple-600 hover:text-orange-600 transition-colors font-medium"
+                disabled={loading}
               >
                 {isLogin ? "Нет аккаунта? Зарегистрируйтесь" : "Уже есть аккаунт? Войти"}
               </button>
