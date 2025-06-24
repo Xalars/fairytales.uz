@@ -12,8 +12,8 @@ import { useAudio } from "@/hooks/useAudio";
 
 const Library = () => {
   const { user, signOut } = useAuth();
-  const { fairytales, userFairytales, aiFairytales, loading, refetch } = useFairytales();
-  const { toggleLike, isLiked } = useLikes();
+  const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
+  const { toggleLike, isLiked, getLikeCount } = useLikes();
   const { generateAndPlayAudio, stopAudio, isCurrentlyPlaying, isCurrentlyGenerating } = useAudio();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -82,8 +82,6 @@ const Library = () => {
     
     try {
       await toggleLike(storyId, source);
-      // Force a refetch to get updated like counts from the database
-      await refetch();
     } catch (error) {
       console.error('Error toggling like:', error);
     } finally {
@@ -374,7 +372,7 @@ const Library = () => {
                           disabled={!user || isCurrentlyLiking}
                         >
                           <Heart className={`w-4 h-4 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
-                          <span className="text-sm font-bold">{story.like_count}</span>
+                          <span className="text-sm font-bold">{getLikeCount(story.id)}</span>
                         </button>
                       </div>
                     </div>
