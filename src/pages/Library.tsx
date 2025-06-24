@@ -3,22 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Heart, Play, BookOpen, Search, Filter, Pause, Menu } from "lucide-react";
+import { Heart, Play, BookOpen, Search, Filter, Pause, Menu, ImageIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFairytales } from "@/hooks/useFairytales";
 import { useLikes } from "@/hooks/useLikes";
 import { useAudio } from "@/hooks/useAudio";
+import { useImageGeneration } from "@/hooks/useImageGeneration";
 
 const Library = () => {
   const { user, signOut } = useAuth();
-  const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
+  const { fairytales, userFairytales, aiFairytales, loading, refetch } = useFairytales();
   const { toggleLike, isLiked, getLikeCount } = useLikes();
   const { generateAndPlayAudio, stopAudio, isCurrentlyPlaying, isCurrentlyGenerating } = useAudio();
+  const { generateCoverForExistingStory, isGenerating: isGeneratingCover } = useImageGeneration();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [likingStories, setLikingStories] = useState<Set<string>>(new Set());
+  const [generatingCovers, setGeneratingCovers] = useState<Set<string>>(new Set());
 
   // Combine all stories with proper typing
   const allStories = [
@@ -98,6 +101,26 @@ const Library = () => {
       stopAudio();
     } else {
       await generateAndPlayAudio(story.content, story.id, story.source, story.audio_url);
+    }
+  };
+
+  const handleGenerateCover = async (story: any) => {
+    const storyKey = `${story.source}-${story.id}`;
+    if (generatingCovers.has(storyKey)) return;
+
+    setGeneratingCovers(prev => new Set(prev).add(storyKey));
+    
+    try {
+      await generateCoverForExistingStory(story.id, story.title, story.content, story.source);
+      await refetch(); // Refresh to show the new cover
+    } catch (error) {
+      console.error('Error generating cover:', error);
+    } finally {
+      setGeneratingCovers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(storyKey);
+        return newSet;
+      });
     }
   };
 
@@ -297,16 +320,47 @@ const Library = () => {
             {filteredStories.map((story) => {
               const storyKey = `${story.source}-${story.id}`;
               const isCurrentlyLiking = likingStories.has(storyKey);
+              const isGeneratingCoverForStory = generatingCovers.has(storyKey);
               
               return (
                 <Card key={storyKey} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
                   <div className="relative overflow-hidden">
                     <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
                       {story.image_url ? (
-                        <img src={story.image_url} alt={story.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <BookOpen className="w-16 h-16 text-white opacity-80" />
-                      )}
+                        <img 
+                          src={story.image_url} 
+                          alt={story.title} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`flex flex-col items-center justify-center ${story.image_url ? 'hidden' : ''}`}>
+                        <BookOpen className="w-16 h-16 text-white opacity-80 mb-2" />
+                        {user && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleGenerateCover(story)}
+                            disabled={isGeneratingCoverForStory}
+                            className="text-xs bg-white/90 hover:bg-white"
+                          >
+                            {isGeneratingCoverForStory ? (
+                              <>
+                                <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+                                Генерация...
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon className="w-3 h-3 mr-1" />
+                                Создать обложку
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="absolute top-3 right-3">
                       <Badge 

@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useImageGeneration } from '@/hooks/useImageGeneration';
 
 export interface Fairytale {
   id: string;
@@ -49,6 +49,7 @@ export interface AIFairytale {
 
 export const useFairytales = () => {
   const { user } = useAuth();
+  const { generateCoverImage } = useImageGeneration();
   const [fairytales, setFairytales] = useState<FolkFairytale[]>([]);
   const [userFairytales, setUserFairytales] = useState<Fairytale[]>([]);
   const [aiFairytales, setAiFairytales] = useState<AIFairytale[]>([]);
@@ -136,6 +137,14 @@ export const useFairytales = () => {
 
       if (error) throw error;
       
+      // Generate cover image for user fairytale
+      try {
+        await generateCoverImage(title, content, data.id, 'user_generated');
+      } catch (coverError) {
+        console.error('Failed to generate cover image for user fairytale:', coverError);
+        // Don't fail the whole operation if cover generation fails
+      }
+      
       await fetchFairytales();
       return { data, error: null };
     } catch (err) {
@@ -178,6 +187,17 @@ export const useFairytales = () => {
       }
       
       console.log('AI fairytale saved successfully:', data);
+      
+      // Generate cover image automatically for AI fairytales if not provided
+      if (!coverImageUrl) {
+        try {
+          await generateCoverImage(title, content, data.id, 'ai_generated');
+          console.log('Cover image generated for AI fairytale:', data.id);
+        } catch (coverError) {
+          console.error('Failed to generate cover image for AI fairytale:', coverError);
+          // Don't fail the whole operation if cover generation fails
+        }
+      }
       
       // Refresh the fairytales list to show the new story immediately
       await fetchFairytales();

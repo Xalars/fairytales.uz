@@ -19,8 +19,20 @@ serve(async (req) => {
       throw new Error('Title, storyId, and storyType are required')
     }
 
-    // Create a fairy-tale style prompt based on the title and content
-    const prompt = `A beautiful hand-drawn fairy tale illustration in the style of children's book art, depicting: ${title}. The image should be colorful, magical, and suitable for children, with Uzbek cultural elements if relevant. High quality, detailed, artistic style.`
+    // Create enhanced prompts based on story type and content
+    let basePrompt = ''
+    
+    if (storyType === 'folk') {
+      basePrompt = `A traditional Uzbek folk tale illustration depicting: ${title}. Traditional Central Asian art style with rich colors, ornate patterns, and cultural elements like traditional clothing, architecture, and landscapes. Hand-drawn fairy tale book illustration style.`
+    } else if (storyType === 'ai_generated') {
+      basePrompt = `A magical fairy tale illustration for the story: ${title}. Modern children's book art style with vibrant colors, whimsical characters, and enchanting scenes. Include elements that reflect the story's magical nature.`
+    } else {
+      basePrompt = `A beautiful children's book illustration for: ${title}. Warm, inviting art style suitable for young readers, with bright colors and engaging characters.`
+    }
+
+    // Add content context if available
+    const contentContext = content ? ` The story involves: ${content.substring(0, 200)}...` : ''
+    const fullPrompt = basePrompt + contentContext + ' High quality, detailed, artistic illustration perfect for a book cover.'
 
     // Generate image with DALL-E
     const response = await fetch('https://api.openai.com/v1/images/generations', {
@@ -31,7 +43,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'dall-e-3',
-        prompt: prompt,
+        prompt: fullPrompt,
         n: 1,
         size: '1024x1024',
         quality: 'standard',
@@ -52,7 +64,7 @@ serve(async (req) => {
     const imageBlob = await imageResponse.blob()
     const imageBuffer = await imageBlob.arrayBuffer()
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (fairytale-covers bucket)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -60,7 +72,7 @@ serve(async (req) => {
     const fileName = `cover-${storyType}-${storyId}-${Date.now()}.png`
     
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('fairytale-audio')
+      .from('fairytale-covers')
       .upload(fileName, imageBuffer, {
         contentType: 'image/png',
         upsert: true
@@ -72,7 +84,7 @@ serve(async (req) => {
 
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from('fairytale-audio')
+      .from('fairytale-covers')
       .getPublicUrl(fileName)
 
     const publicUrl = urlData.publicUrl
