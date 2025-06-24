@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Play, BookOpen, Pause, Menu, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from '@/contexts/AuthContext';
 import { useLikes } from "@/hooks/useLikes";
 import { useAudio } from "@/hooks/useAudio";
 import { useFairytales } from "@/hooks/useFairytales";
