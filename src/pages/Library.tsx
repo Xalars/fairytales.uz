@@ -126,14 +126,14 @@ const Library = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 font-comic">
       {/* Header */}
       <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
             <BookOpen className="h-8 w-8 md:h-10 md:w-10 text-purple-600 transform rotate-12" />
             <div>
-              <h1 className="text-xl md:text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+              <h1 className="text-xl md:text-3xl font-bold text-purple-700 font-comic">
                 fAIrytales.uz
               </h1>
               <p className="text-xs md:text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
@@ -224,7 +224,7 @@ const Library = () => {
                 <Button 
                   onClick={handleSignOut}
                   variant="outline" 
-                  className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+                  className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium btn-mobile"
                 >
                   Выйти
                 </Button>
@@ -233,14 +233,14 @@ const Library = () => {
                   <Link to="/auth" className="block">
                     <Button 
                       variant="outline" 
-                      className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+                      className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium btn-mobile"
                     >
                       Войти
                     </Button>
                   </Link>
                   <Link to="/auth?mode=signup" className="block">
                     <Button 
-                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium"
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium btn-mobile"
                     >
                       Зарегистрироваться
                     </Button>
@@ -253,16 +253,16 @@ const Library = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-5xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+      <div className="container mx-auto px-4 py-6 md:py-8">
+        <div className="text-center mb-6 md:mb-8">
+          <h2 className="text-3xl md:text-5xl font-bold text-purple-800 mb-4 transform -rotate-1 font-comic">
             Каталог Сказок 📚
           </h2>
           <div className="w-32 h-2 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full mx-auto"></div>
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-4 md:p-6 mb-8 shadow-lg">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-4 md:p-6 mb-6 md:mb-8 shadow-lg">
           <div className="flex flex-col gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-5 h-5" />
@@ -270,14 +270,14 @@ const Library = () => {
                 placeholder="Поиск сказок..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-2 border-purple-300 rounded-full bg-white/90 focus:border-purple-500"
+                className="pl-10 border-2 border-purple-300 rounded-full bg-white/90 focus:border-purple-500 min-h-[44px]"
               />
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedCategory === 'all' ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory('all')}
-                className="rounded-full border-2 text-xs md:text-sm"
+                className="rounded-full border-2 text-xs md:text-sm btn-mobile"
                 size="sm"
               >
                 <Filter className="w-3 h-3 md:w-4 md:h-4 mr-1" />
@@ -286,7 +286,7 @@ const Library = () => {
               <Button
                 variant={selectedCategory === 'folk' ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory('folk')}
-                className="rounded-full border-2 text-xs md:text-sm"
+                className="rounded-full border-2 text-xs md:text-sm btn-mobile"
                 size="sm"
               >
                 Народные
@@ -294,7 +294,7 @@ const Library = () => {
               <Button
                 variant={selectedCategory === 'user' ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory('user')}
-                className="rounded-full border-2 text-xs md:text-sm"
+                className="rounded-full border-2 text-xs md:text-sm btn-mobile"
                 size="sm"
               >
                 Пользовательские
@@ -302,7 +302,7 @@ const Library = () => {
               <Button
                 variant={selectedCategory === 'ai' ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory('ai')}
-                className="rounded-full border-2 text-xs md:text-sm"
+                className="rounded-full border-2 text-xs md:text-sm btn-mobile"
                 size="sm"
               >
                 ИИ
@@ -326,7 +326,7 @@ const Library = () => {
               return (
                 <Card key={storyKey} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
                   <div className="relative overflow-hidden">
-                    <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+                    <div className="w-full h-40 md:h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
                       {story.image_url ? (
                         <img 
                           src={story.image_url} 
@@ -339,14 +339,14 @@ const Library = () => {
                         />
                       ) : null}
                       <div className={`flex flex-col items-center justify-center ${story.image_url ? 'hidden' : ''}`}>
-                        <BookOpen className="w-16 h-16 text-white opacity-80 mb-2" />
+                        <BookOpen className="w-12 h-12 md:w-16 md:h-16 text-white opacity-80 mb-2" />
                         {user && (
                           <Button
                             size="sm"
                             variant="secondary"
                             onClick={() => handleGenerateCover(story)}
                             disabled={isGeneratingCoverForStory}
-                            className="text-xs bg-white/90 hover:bg-white"
+                            className="text-xs bg-white/90 hover:bg-white btn-mobile"
                           >
                             {isGeneratingCoverForStory ? (
                               <>
@@ -379,7 +379,7 @@ const Library = () => {
                     </div>
                   </div>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-lg md:text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                    <CardTitle className="text-lg md:text-xl group-hover:text-purple-600 transition-colors font-bold font-comic">
                       {story.title}
                     </CardTitle>
                     <CardDescription className="text-purple-600 font-medium text-sm">
@@ -390,7 +390,7 @@ const Library = () => {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div className="flex gap-2 flex-wrap">
                         <Link to={`/story/${story.source}/${story.id}`}>
-                          <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium text-xs">
+                          <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium text-xs btn-mobile">
                             <BookOpen className="w-3 h-3 mr-1" />
                             Читать
                           </Button>
@@ -398,7 +398,7 @@ const Library = () => {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium text-xs"
+                          className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium text-xs btn-mobile"
                           onClick={() => handlePlayAudio(story)}
                           disabled={isCurrentlyGenerating(story.id)}
                         >
@@ -423,7 +423,7 @@ const Library = () => {
                       <div className="flex items-center text-pink-600">
                         <button
                           onClick={() => handleLike(story.id, story.source)}
-                          className="flex items-center hover:scale-110 transition-transform disabled:opacity-50"
+                          className="flex items-center hover:scale-110 transition-transform disabled:opacity-50 min-h-[44px] px-2"
                           disabled={!user || isCurrentlyLiking}
                         >
                           <Heart className={`w-4 h-4 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />

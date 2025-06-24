@@ -1,3 +1,6 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,5 +102,30 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Comic Neue', 'Comic Sans MS', cursive, system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Ensure consistent font usage across all devices */
+.font-comic {
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive, system-ui, -apple-system, sans-serif !important;
+}
+
+/* Mobile-first responsive design improvements */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Ensure text is readable on mobile */
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2;
+  }
+  
+  /* Better button spacing on mobile */
+  .btn-mobile {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
   }
 }

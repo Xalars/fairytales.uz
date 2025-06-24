@@ -9,6 +9,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Function to clean markdown formatting
+const cleanMarkdown = (text: string): string => {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+    .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown
+    .replace(/__(.*?)__/g, '$1') // Remove underline markdown
+    .replace(/_(.*?)_/g, '$1') // Remove italic underline markdown
+    .replace(/`(.*?)`/g, '$1') // Remove code markdown
+    .replace(/#{1,6}\s/g, '') // Remove headers
+    .replace(/^\s*[-*+]\s/gm, '') // Remove list markers
+    .replace(/^\s*\d+\.\s/gm, '') // Remove numbered list markers
+    .trim();
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,7 +38,7 @@ serve(async (req) => {
     // Language mapping for proper prompts
     const languagePrompts = {
       russian: {
-        systemPrompt: "Ты талантливый рассказчик узбекских народных сказок. Создай волшебную, добрую сказку на русском языке в стиле узбекского фольклора.",
+        systemPrompt: "Ты талантливый рассказчик узбекских народных сказок. Создай волшебную, добрую сказку на русском языке в стиле узбекского фольклора. НЕ ИСПОЛЬЗУЙ никакой markdown разметки (**, __, *, _). Пиши простым текстом без форматирования.",
         lengthMap: {
           short: "короткую (1-2 минуты чтения)",
           medium: "среднюю (3-5 минут чтения)", 
@@ -32,7 +46,7 @@ serve(async (req) => {
         }
       },
       uzbek: {
-        systemPrompt: "Sen o'zbek xalq ertaklarining mohir hikoyachisissan. O'zbek folklori uslubida, uzbek tilida sehrli va mehribon ertak yarating.",
+        systemPrompt: "Sen o'zbek xalq ertaklarining mohir hikoyachisissan. O'zbek folklori uslubida, uzbek tilida sehrli va mehribon ertak yarating. HECH QANDAY markdown formatlashdan foydalanmang (**, __, *, _). Oddiy matn bilan yozing.",
         lengthMap: {
           short: "qisqa (1-2 daqiqa o'qish)",
           medium: "o'rta (3-5 daqiqa o'qish)",
@@ -40,7 +54,7 @@ serve(async (req) => {
         }
       },
       english: {
-        systemPrompt: "You are a talented storyteller of Uzbek folk tales. Create a magical, kind fairy tale in English in the style of Uzbek folklore.",
+        systemPrompt: "You are a talented storyteller of Uzbek folk tales. Create a magical, kind fairy tale in English in the style of Uzbek folklore. DO NOT use any markdown formatting (**, __, *, _). Write in plain text without formatting.",
         lengthMap: {
           short: "short (1-2 minutes reading)",
           medium: "medium (3-5 minutes reading)",
@@ -68,7 +82,7 @@ Ertakda quyidagilar bo'lishi kerak:
 - Sehrli elementlar
 - Baxtli tugash
 
-Ertakni to'liq uzbek tilida yozing. Avval ertakning nomini bering, keyin to'liq matnini yozing.`;
+Ertakni to'liq uzbek tilida yozing. Avval ertakning nomini bering, keyin to'liq matnini yozing. MARKDOWN formatlashdan foydalanmang.`;
     } else if (language === 'english') {
       userPrompt = `Create a ${lengthDescription} fairy tale with these parameters:
 
@@ -83,7 +97,7 @@ The fairy tale should include:
 - Magical elements
 - Happy ending
 
-Write the entire fairy tale in English. First provide the title, then the full story.`;
+Write the entire fairy tale in English. First provide the title, then the full story. Do NOT use markdown formatting.`;
     } else {
       userPrompt = `Создай ${lengthDescription} сказку с такими параметрами:
 
@@ -98,7 +112,7 @@ Write the entire fairy tale in English. First provide the title, then the full s
 - Волшебные элементы
 - Счастливый конец
 
-Напиши всю сказку на русском языке. Сначала дай название сказки, потом полный текст.`;
+Напиши всю сказку на русском языке. Сначала дай название сказки, потом полный текст. НЕ используй markdown разметку.`;
     }
 
     console.log(`Generating fairy tale in ${language}...`);
@@ -132,7 +146,10 @@ Write the entire fairy tale in English. First provide the title, then the full s
       throw new Error(data.error?.message || 'Failed to generate fairy tale');
     }
 
-    const generatedText = data.choices[0].message.content;
+    let generatedText = data.choices[0].message.content;
+    
+    // Clean any markdown formatting that might have been generated
+    generatedText = cleanMarkdown(generatedText);
     
     // Extract title and content
     const lines = generatedText.split('\n').filter(line => line.trim());
@@ -151,8 +168,8 @@ Write the entire fairy tale in English. First provide the title, then the full s
     console.log(`Fairy tale generated successfully in ${language}`);
 
     return new Response(JSON.stringify({
-      title,
-      content,
+      title: cleanMarkdown(title),
+      content: cleanMarkdown(content),
       parameters
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

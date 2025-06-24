@@ -9,6 +9,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Function to clean markdown formatting
+const cleanMarkdown = (text: string): string => {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+    .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown
+    .replace(/__(.*?)__/g, '$1') // Remove underline markdown
+    .replace(/_(.*?)_/g, '$1') // Remove italic underline markdown
+    .replace(/`(.*?)`/g, '$1') // Remove code markdown
+    .replace(/#{1,6}\s/g, '') // Remove headers
+    .replace(/^\s*[-*+]\s/gm, '') // Remove list markers
+    .replace(/^\s*\d+\.\s/gm, '') // Remove numbered list markers
+    .trim();
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -78,7 +92,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Ты редактор детских сказок. Улучши грамматику, стиль и структуру сказки, сохраняя её основной сюжет и смысл. Сделай текст более красивым и литературным, подходящим для детей. Верни улучшенную версию сказки.`
+            content: `Ты редактор детских сказок. Улучши грамматику, стиль и структуру сказки, сохраняя её основной сюжет и смысл. Сделай текст более красивым и литературным, подходящим для детей. Верни улучшенную версию сказки. НЕ ИСПОЛЬЗУЙ никакой markdown разметки (**, __, *, _). Пиши простым текстом без форматирования.`
           },
           {
             role: 'user',
@@ -90,7 +104,10 @@ serve(async (req) => {
     });
 
     const improvementData = await improvementResponse.json();
-    const improvedContent = improvementData.choices[0].message.content.trim();
+    let improvedContent = improvementData.choices[0].message.content.trim();
+
+    // Clean any markdown formatting that might have been generated
+    improvedContent = cleanMarkdown(improvedContent);
 
     console.log('Content improved successfully');
 

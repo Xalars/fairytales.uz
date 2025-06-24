@@ -13,7 +13,7 @@ import { useAudio } from "@/hooks/useAudio";
 const Index = () => {
   const { user, signOut } = useAuth();
   const { fairytales, userFairytales, aiFairytales, loading } = useFairytales();
-  const { toggleLike, isLiked } = useLikes();
+  const { getLikeCount } = useLikes();
   const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio } = useAudio();
   const [topStories, setTopStories] = useState<any[]>([]);
 
@@ -66,12 +66,6 @@ const Index = () => {
     await signOut();
   };
 
-  const handleLike = async (storyId: string, source: 'folk' | 'user_generated' | 'ai_generated') => {
-    if (user) {
-      await toggleLike(storyId, source);
-    }
-  };
-
   const handlePlayAudio = async (story: any) => {
     if (isPlaying) {
       stopAudio();
@@ -81,7 +75,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 relative overflow-hidden" style={{ fontFamily: "'Comic Sans MS', cursive, system-ui, -apple-system, sans-serif" }}>
       {/* Decorative clouds and stars */}
       <div className="absolute top-10 left-10 opacity-20">
         <div className="w-20 h-12 bg-white rounded-full"></div>
@@ -98,12 +92,12 @@ const Index = () => {
       <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
-            <BookOpen className="h-10 w-10 text-purple-600 transform rotate-12" />
+            <BookOpen className="h-8 w-8 md:h-10 md:w-10 text-purple-600 transform rotate-12" />
             <div>
-              <h1 className="text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+              <h1 className="text-xl md:text-3xl font-bold text-purple-700" style={{ fontFamily: "'Comic Sans MS', cursive" }}>
                 fAIrytales.uz
               </h1>
-              <p className="text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
+              <p className="text-xs md:text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
             </div>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
@@ -126,7 +120,7 @@ const Index = () => {
             <Button 
               onClick={handleSignOut}
               variant="outline" 
-              className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+              className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-4 md:px-6 py-2 font-medium transform hover:scale-105 transition-all text-sm md:text-base"
             >
               Выйти
             </Button>
@@ -134,7 +128,7 @@ const Index = () => {
             <Link to="/auth">
               <Button 
                 variant="outline" 
-                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
+                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-4 md:px-6 py-2 font-medium transform hover:scale-105 transition-all text-sm md:text-base"
               >
                 Войти
               </Button>
@@ -144,21 +138,21 @@ const Index = () => {
       </header>
 
       {/* Hero Section with updated buttons */}
-      <section className="container mx-auto px-4 py-16 text-center relative">
+      <section className="container mx-auto px-4 py-8 md:py-16 text-center relative">
         <div className="max-w-4xl mx-auto relative">
           {/* Decorative elements */}
-          <div className="absolute -top-10 left-20 opacity-30">
+          <div className="absolute -top-10 left-20 opacity-30 hidden md:block">
             <div className="w-16 h-16 bg-yellow-200 rounded-full border-4 border-yellow-300"></div>
           </div>
           
-          <h2 className="text-6xl md:text-7xl font-bold text-purple-800 mb-6 leading-tight transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold text-purple-800 mb-6 leading-tight transform -rotate-1" style={{ fontFamily: "'Comic Sans MS', cursive" }}>
             Волшебные
             <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent block transform rotate-1">
               Узбекские Сказки
             </span>
           </h2>
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-6 mx-4 mb-8 shadow-lg transform rotate-1">
-            <p className="text-xl text-purple-700 max-w-2xl mx-auto font-medium">
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-4 md:p-6 mx-4 mb-8 shadow-lg transform rotate-1">
+            <p className="text-lg md:text-xl text-purple-700 max-w-2xl mx-auto font-medium">
               Читайте, слушайте и создавайте магические истории с помощью ИИ. 
               Погрузитесь в мир узбекского фольклора!
             </p>
@@ -167,9 +161,9 @@ const Index = () => {
             <Link to="/library">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-sm md:text-base"
               >
-                <BookOpen className="w-6 h-6 mr-2" />
+                <BookOpen className="w-5 h-5 md:w-6 md:h-6 mr-2" />
                 Начать читать
               </Button>
             </Link>
@@ -177,9 +171,9 @@ const Index = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold"
+                className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-6 md:px-8 py-3 md:py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-sm md:text-base"
               >
-                <Sparkles className="w-6 h-6 mr-2" />
+                <Sparkles className="w-5 h-5 md:w-6 md:h-6 mr-2" />
                 Сгенерировать сказку
               </Button>
             </Link>
@@ -188,12 +182,12 @@ const Index = () => {
       </section>
 
       {/* Top Stories Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-5xl font-bold text-purple-800 mb-4 transform rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+      <section className="container mx-auto px-4 py-8 md:py-16">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-3xl md:text-5xl font-bold text-purple-800 mb-4 transform rotate-1" style={{ fontFamily: "'Comic Sans MS', cursive" }}>
             Топ Сказок ⭐
           </h2>
-          <p className="text-purple-600 text-xl">Самые любимые истории нашего сообщества</p>
+          <p className="text-purple-600 text-lg md:text-xl">Самые любимые истории нашего сообщества</p>
           <div className="w-32 h-2 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full mx-auto mt-4"></div>
         </div>
 
@@ -202,26 +196,26 @@ const Index = () => {
             <p className="text-purple-700 font-medium text-lg">Загрузка топ сказок...</p>
           </div>
         ) : topStories.length > 0 ? (
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
             {topStories.map((story, index) => (
               <Card key={`${story.source}-${story.id}`} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1 relative">
                 {index === 0 && (
                   <div className="absolute top-3 left-3 z-10">
-                    <Crown className="w-8 h-8 text-yellow-500" />
+                    <Crown className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
                   </div>
                 )}
                 <div className="relative overflow-hidden">
-                  <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+                  <div className="w-full h-36 md:h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
                     {story.image_url ? (
                       <img src={story.image_url} alt={story.title} className="w-full h-full object-cover" />
                     ) : (
-                      <BookOpen className="w-16 h-16 text-white opacity-80" />
+                      <BookOpen className="w-12 h-12 md:w-16 md:h-16 text-white opacity-80" />
                     )}
                   </div>
                   <div className="absolute top-3 right-3">
                     <Badge 
                       variant="secondary" 
-                      className={`font-bold rounded-full px-3 py-1 border-2 ${
+                      className={`font-bold rounded-full px-2 py-1 text-xs border-2 ${
                         story.type === 'Народные сказки' 
                           ? 'bg-purple-100 border-purple-300 text-purple-700'
                           : story.type === 'Опубликованные пользователями'
@@ -234,57 +228,50 @@ const Index = () => {
                   </div>
                 </div>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                  <CardTitle className="text-lg md:text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: "'Comic Sans MS', cursive" }}>
                     {story.title}
                   </CardTitle>
-                  <CardDescription className="text-purple-600 font-medium">
-                    {story.content ? story.content.substring(0, 100) + '...' : 'Содержание недоступно'}
+                  <CardDescription className="text-purple-600 font-medium text-sm">
+                    {story.content ? story.content.substring(0, 80) + '...' : 'Содержание недоступно'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Link to={`/story/${story.source}/${story.id}`}>
-                        <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium">
-                          <BookOpen className="w-4 h-4 mr-1" />
+                        <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium text-xs">
+                          <BookOpen className="w-3 h-3 mr-1" />
                           Читать
                         </Button>
                       </Link>
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium"
+                        className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium text-xs"
                         onClick={() => handlePlayAudio(story)}
                         disabled={isGenerating}
                       >
                         {isGenerating ? (
                           <>
-                            <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                            <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
                             Генерация...
                           </>
                         ) : isPlaying ? (
                           <>
-                            <Pause className="w-4 h-4 mr-1" />
+                            <Pause className="w-3 h-3 mr-1" />
                             Стоп
                           </>
                         ) : (
                           <>
-                            <Play className="w-4 h-4 mr-1" />
+                            <Play className="w-3 h-3 mr-1" />
                             Слушать
                           </>
                         )}
                       </Button>
                     </div>
                     <div className="flex items-center text-pink-600">
-                      {user && (
-                        <button
-                          onClick={() => handleLike(story.id, story.source)}
-                          className="flex items-center hover:scale-110 transition-transform mr-2"
-                        >
-                          <Heart className={`w-5 h-5 mr-1 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
-                        </button>
-                      )}
-                      <span className="text-sm font-bold">{story.like_count}</span>
+                      <Heart className="w-4 h-4 mr-1" />
+                      <span className="text-sm font-bold">{getLikeCount(story.id)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -302,40 +289,40 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-8 text-center">
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-purple-200 p-8 shadow-lg transform rotate-1 hover:scale-105 transition-all">
-            <div className="text-5xl font-bold text-purple-600 mb-2" style={{ fontFamily: 'Comic Sans MS, cursive' }}>{fairytales.length + userFairytales.length + aiFairytales.length}+</div>
-            <div className="text-purple-700 font-medium text-lg">Сказок</div>
-            <Star className="w-8 h-8 text-yellow-400 fill-current mx-auto mt-2" />
+      <section className="container mx-auto px-4 py-8 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 text-center">
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-purple-200 p-6 md:p-8 shadow-lg transform rotate-1 hover:scale-105 transition-all">
+            <div className="text-3xl md:text-5xl font-bold text-purple-600 mb-2" style={{ fontFamily: "'Comic Sans MS', cursive" }}>{fairytales.length + userFairytales.length + aiFairytales.length}+</div>
+            <div className="text-purple-700 font-medium text-base md:text-lg">Сказок</div>
+            <Star className="w-6 h-6 md:w-8 md:h-8 text-yellow-400 fill-current mx-auto mt-2" />
           </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-8 shadow-lg transform -rotate-1 hover:scale-105 transition-all">
-            <div className="text-5xl font-bold text-orange-600 mb-2" style={{ fontFamily: 'Comic Sans MS, cursive' }}>3</div>
-            <div className="text-orange-700 font-medium text-lg">Языка</div>
-            <Globe className="w-8 h-8 text-orange-400 mx-auto mt-2" />
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-6 md:p-8 shadow-lg transform -rotate-1 hover:scale-105 transition-all">
+            <div className="text-3xl md:text-5xl font-bold text-orange-600 mb-2" style={{ fontFamily: "'Comic Sans MS', cursive" }}>3</div>
+            <div className="text-orange-700 font-medium text-base md:text-lg">Языка</div>
+            <Globe className="w-6 h-6 md:w-8 md:h-8 text-orange-400 mx-auto mt-2" />
           </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-green-200 p-8 shadow-lg transform rotate-1 hover:scale-105 transition-all">
-            <div className="text-5xl font-bold text-green-600 mb-2" style={{ fontFamily: 'Comic Sans MS, cursive' }}>1000+</div>
-            <div className="text-green-700 font-medium text-lg">Счастливых Читателей</div>
-            <Heart className="w-8 h-8 text-pink-400 fill-current mx-auto mt-2" />
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-green-200 p-6 md:p-8 shadow-lg transform rotate-1 hover:scale-105 transition-all">
+            <div className="text-3xl md:text-5xl font-bold text-green-600 mb-2" style={{ fontFamily: "'Comic Sans MS', cursive" }}>1000+</div>
+            <div className="text-green-700 font-medium text-base md:text-lg">Счастливых Читателей</div>
+            <Heart className="w-6 h-6 md:w-8 md:h-8 text-pink-400 fill-current mx-auto mt-2" />
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-8 md:py-16">
         <div className="flex flex-col items-center justify-center">
-          <h2 className="text-4xl font-bold text-purple-800 mb-4 transform rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+          <h2 className="text-2xl md:text-4xl font-bold text-purple-800 mb-4 text-center transform rotate-1" style={{ fontFamily: "'Comic Sans MS', cursive" }}>
             Читайте, слушайте и создавайте магические истории с помощью ИИ
           </h2>
-          <p className="text-lg text-purple-600 mb-8">Погрузитесь в мир узбекского фольклора!</p>
+          <p className="text-base md:text-lg text-purple-600 mb-8 text-center">Погрузитесь в мир узбекского фольклора!</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Link to="/library">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-full border-4 border-purple-300 shadow-lg transform hover:scale-105 transition-all font-bold text-sm md:text-base"
               >
-                <BookOpen className="w-6 h-6 mr-2" />
+                <BookOpen className="w-5 h-5 md:w-6 md:h-6 mr-2" />
                 Начать читать
               </Button>
             </Link>
@@ -343,9 +330,9 @@ const Index = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-8 py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold"
+                className="border-4 border-orange-400 text-orange-700 hover:bg-orange-100 px-6 md:px-8 py-3 md:py-4 rounded-full shadow-lg transform hover:scale-105 transition-all font-bold text-sm md:text-base"
               >
-                <Sparkles className="w-6 h-6 mr-2" />
+                <Sparkles className="w-5 h-5 md:w-6 md:h-6 mr-2" />
                 Сгенерировать сказку
               </Button>
             </Link>
@@ -354,41 +341,41 @@ const Index = () => {
       </section>
 
       {/* Footer with cartoon styling */}
-      <footer className="bg-purple-800 text-white py-12 border-t-8 border-purple-600">
+      <footer className="bg-purple-800 text-white py-8 md:py-12 border-t-8 border-purple-600">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <BookOpen className="h-8 w-8 text-yellow-400" />
-                <span className="text-2xl font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>fAIrytales.uz</span>
+                <BookOpen className="h-6 h-6 md:h-8 md:w-8 text-yellow-400" />
+                <span className="text-xl md:text-2xl font-bold" style={{ fontFamily: "'Comic Sans MS', cursive" }}>fAIrytales.uz</span>
               </div>
-              <p className="text-purple-200 font-medium">
+              <p className="text-purple-200 font-medium text-sm md:text-base">
                 Узбекские сказки с магией ИИ - читайте, слушайте и создавайте!
               </p>
             </div>
             <div>
-              <h4 className="font-bold mb-4 text-lg" style={{ fontFamily: 'Comic Sans MS, cursive' }}>Исследовать</h4>
-              <ul className="space-y-2 text-purple-200">
+              <h4 className="font-bold mb-4 text-base md:text-lg" style={{ fontFamily: "'Comic Sans MS', cursive" }}>Исследовать</h4>
+              <ul className="space-y-2 text-purple-200 text-sm md:text-base">
                 <li><Link to="/library" className="hover:text-yellow-400 transition-colors font-medium">Каталог Сказок</Link></li>
                 <li><Link to="/ai-fairytales" className="hover:text-yellow-400 transition-colors font-medium">ИИ-сказки</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-4 text-lg" style={{ fontFamily: 'Comic Sans MS, cursive' }}>Создавать</h4>
-              <ul className="space-y-2 text-purple-200">
+              <h4 className="font-bold mb-4 text-base md:text-lg" style={{ fontFamily: "'Comic Sans MS', cursive" }}>Создавать</h4>
+              <ul className="space-y-2 text-purple-200 text-sm md:text-base">
                 <li><Link to="/publish" className="hover:text-yellow-400 transition-colors font-medium">Опубликовать сказку</Link></li>
                 <li><Link to="/ai-fairytales" className="hover:text-yellow-400 transition-colors font-medium">Генерировать ИИ сказку</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-4 text-lg" style={{ fontFamily: 'Comic Sans MS, cursive' }}>Аккаунт</h4>
-              <ul className="space-y-2 text-purple-200">
+              <h4 className="font-bold mb-4 text-base md:text-lg" style={{ fontFamily: "'Comic Sans MS', cursive" }}>Аккаунт</h4>
+              <ul className="space-y-2 text-purple-200 text-sm md:text-base">
                 <li><Link to="/auth" className="hover:text-yellow-400 transition-colors font-medium">Профиль</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t-2 border-purple-600 mt-8 pt-8 text-center text-purple-200">
-            <p className="font-medium">© 2024 fAIrytales.uz. Создано с магией и технологиями! ✨</p>
+          <div className="border-t-2 border-purple-600 mt-6 md:mt-8 pt-6 md:pt-8 text-center text-purple-200">
+            <p className="font-medium text-sm md:text-base">© 2024 fAIrytales.uz. Создано с магией и технологиями! ✨</p>
           </div>
         </div>
       </footer>
