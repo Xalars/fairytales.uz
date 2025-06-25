@@ -10,7 +10,9 @@ import { useLikes } from "@/hooks/useLikes";
 import { useAudio } from "@/hooks/useAudio";
 import { useFairytales } from "@/hooks/useFairytales";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from '@/integrations/supabase/client';
+import MobileNav from "@/components/MobileNav";
 
 interface Story {
   id: string;
@@ -30,21 +32,20 @@ const Profile = () => {
   const { isGenerating, isPlaying, generateAndPlayAudio, stopAudio, isCurrentlyPlaying, isCurrentlyGenerating } = useAudio();
   const { deleteUserFairytale, deleteAIFairytale } = useFairytales();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [aiStories, setAiStories] = useState<Story[]>([]);
   const [likedStories, setLikedStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
-    // Only redirect if auth is not loading and user is definitely not authenticated
     if (!authLoading && !user) {
       navigate('/auth');
       return;
     }
     
-    // Only fetch data if user exists and auth is not loading
     if (!authLoading && user) {
       fetchUserData();
     }
@@ -62,7 +63,6 @@ const Profile = () => {
     try {
       setLoading(true);
 
-      // Fetch user's own stories
       const { data: userStoriesData, error: userError } = await supabase
         .from('user_fairytales')
         .select('*')
@@ -71,7 +71,6 @@ const Profile = () => {
 
       if (userError) throw userError;
 
-      // Fetch user's AI stories
       const { data: aiStoriesData, error: aiError } = await supabase
         .from('ai_fairytales')
         .select('*')
@@ -213,7 +212,6 @@ const Profile = () => {
           title: "Успешно!",
           description: "Сказка удалена",
         });
-        // Refresh the data
         await fetchUserData();
       }
     } catch (error) {
@@ -229,17 +227,17 @@ const Profile = () => {
   const renderStoryCard = (story: Story) => (
     <Card key={`${story.source}-${story.id}`} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-4 border-orange-200 rounded-3xl overflow-hidden transform hover:rotate-1">
       <div className="relative overflow-hidden">
-        <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+        <div className="w-full h-40 sm:h-48 bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
           {story.image_url ? (
             <img src={story.image_url} alt={story.title} className="w-full h-full object-cover" />
           ) : (
-            <BookOpen className="w-16 h-16 text-white opacity-80" />
+            <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-white opacity-80" />
           )}
         </div>
         <div className="absolute top-3 right-3">
           <Badge 
             variant="secondary" 
-            className={`font-bold rounded-full px-2 py-1 text-xs border-2 ${
+            className={`font-comic-medium rounded-full px-2 py-1 text-xs border-2 ${
               story.type === 'Народные сказки' 
                 ? 'bg-purple-100 border-purple-300 text-purple-700'
                 : story.type === 'Опубликованные пользователями' || story.type === 'Авторские сказки'
@@ -251,19 +249,19 @@ const Profile = () => {
           </Badge>
         </div>
       </div>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg md:text-xl group-hover:text-purple-600 transition-colors font-bold" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+      <CardHeader className="pb-2 px-3 sm:px-6">
+        <CardTitle className="text-base sm:text-lg md:text-xl group-hover:text-purple-600 transition-colors font-comic-title mobile-text-wrap">
           {story.title}
         </CardTitle>
-        <CardDescription className="text-purple-600 font-medium text-sm">
-          {story.content ? story.content.substring(0, 100) + '...' : 'Содержание недоступно'}
+        <CardDescription className="text-purple-600 font-comic-medium text-xs sm:text-sm mobile-text-wrap">
+          {story.content ? story.content.substring(0, 80) + '...' : 'Содержание недоступно'}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <CardContent className="px-3 sm:px-6">
+        <div className="flex flex-col gap-3">
           <div className="flex gap-2 flex-wrap">
             <Link to={`/story/${story.source}/${story.id}`}>
-              <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-medium text-xs">
+              <Button size="sm" variant="outline" className="border-2 border-purple-300 text-purple-700 hover:bg-purple-100 rounded-full font-comic-medium text-xs btn-mobile">
                 <BookOpen className="w-3 h-3 mr-1" />
                 Читать
               </Button>
@@ -271,7 +269,7 @@ const Profile = () => {
             <Button 
               size="sm" 
               variant="outline" 
-              className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-medium text-xs"
+              className="border-2 border-green-300 text-green-700 hover:bg-green-100 rounded-full font-comic-medium text-xs btn-mobile"
               onClick={() => handlePlayAudio(story)}
               disabled={isCurrentlyGenerating(story.id)}
             >
@@ -296,7 +294,7 @@ const Profile = () => {
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="border-2 border-red-300 text-red-700 hover:bg-red-100 rounded-full font-medium text-xs"
+                className="border-2 border-red-300 text-red-700 hover:bg-red-100 rounded-full font-comic-medium text-xs btn-mobile"
                 onClick={() => handleDeleteStory(story)}
               >
                 <Trash2 className="w-3 h-3 mr-1" />
@@ -304,7 +302,7 @@ const Profile = () => {
               </Button>
             )}
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center justify-between">
             <Button
               onClick={(e) => handleLike(e, story)}
               variant="ghost"
@@ -312,7 +310,7 @@ const Profile = () => {
               className="p-1 h-auto hover:bg-transparent"
             >
               <Heart className={`w-4 h-4 mr-1 text-pink-600 ${isLiked(story.id, story.source) ? 'fill-current' : ''}`} />
-              <span className="text-sm font-bold text-pink-600">{getLikeCount(story.id)}</span>
+              <span className="text-sm font-comic-title text-pink-600">{getLikeCount(story.id)}</span>
             </Button>
           </div>
         </div>
@@ -320,143 +318,120 @@ const Profile = () => {
     </Card>
   );
 
-  // Show loading spinner while auth is loading
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 flex items-center justify-center font-comic">
         <div className="text-center">
           <div className="w-8 h-8 animate-spin rounded-full border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-purple-700 font-medium text-lg">Загрузка...</p>
+          <p className="text-purple-700 font-comic-medium text-lg">Загрузка...</p>
         </div>
       </div>
     );
   }
 
-  // Only render if user exists
   if (!user) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-100 to-purple-100 font-comic">
       {/* Header */}
-      <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-lg">
+      <header className="border-b-4 border-orange-200 bg-white/90 backdrop-blur-sm sticky top-0 z-40 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
             <BookOpen className="h-8 w-8 md:h-10 md:w-10 text-purple-600 transform rotate-12" />
             <div>
-              <h1 className="text-xl md:text-3xl font-bold text-purple-700" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+              <h1 className="text-xl md:text-3xl font-comic-title text-purple-700">
                 fAIrytales.uz
               </h1>
-              <p className="text-xs md:text-sm text-purple-500 italic">Узбекские сказки с ИИ</p>
+              <p className="text-xs md:text-sm text-purple-500 italic font-comic">Узбекские сказки с ИИ</p>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-              Каталог
-            </Link>
-            <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-              Опубликовать сказку
-            </Link>
-            <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
-              ИИ-сказки
-            </Link>
-            <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">
-              Профиль
-            </Link>
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="border-2 border-purple-400 text-purple-700"
-            >
-              <Menu className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Desktop Auth Button */}
-          <div className="hidden md:flex">
-            <Button 
-              onClick={handleSignOut}
-              variant="outline" 
-              className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium transform hover:scale-105 transition-all"
-            >
-              Выйти
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-orange-200 bg-white/95 backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-4 space-y-2">
-              <Link to="/library" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+          {!isMobile && (
+            <nav className="flex items-center space-x-6">
+              <Link to="/library" className="text-purple-700 hover:text-orange-600 transition-colors font-comic-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
                 Каталог
               </Link>
-              <Link to="/publish" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+              <Link to="/publish" className="text-purple-700 hover:text-orange-600 transition-colors font-comic-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
                 Опубликовать сказку
               </Link>
-              <Link to="/ai-fairytales" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50 text-center">
+              <Link to="/ai-fairytales" className="text-purple-700 hover:text-orange-600 transition-colors font-comic-medium px-3 py-1 rounded-full border-2 border-transparent hover:border-orange-300 hover:bg-orange-50">
                 ИИ-сказки
               </Link>
-              <Link to="/profile" className="block text-purple-700 hover:text-orange-600 transition-colors font-medium px-3 py-2 rounded-full border-2 border-orange-300 bg-orange-50 text-center">
+              <Link to="/profile" className="text-purple-700 hover:text-orange-600 transition-colors font-comic-medium px-3 py-1 rounded-full border-2 border-orange-300 bg-orange-50">
                 Профиль
               </Link>
+            </nav>
+          )}
+
+          {/* Auth and Mobile Menu */}
+          <div className="flex items-center space-x-2">
+            {!isMobile && (
               <Button 
                 onClick={handleSignOut}
                 variant="outline" 
-                className="w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-medium"
+                className="border-2 border-purple-400 text-purple-700 hover:bg-purple-100 rounded-full px-6 py-2 font-comic-medium transform hover:scale-105 transition-all btn-mobile"
               >
                 Выйти
               </Button>
-            </div>
+            )}
+
+            {isMobile && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMobileNavOpen(true)}
+                className="border-2 border-purple-400 text-purple-700 btn-mobile"
+              >
+                <Menu className="w-4 h-4" />
+              </Button>
+            )}
           </div>
-        )}
+        </div>
       </header>
 
+      {/* Mobile Navigation */}
+      <MobileNav isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-5xl font-bold text-purple-800 mb-4 transform -rotate-1" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+      <div className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-comic-title text-purple-800 mb-4 transform -rotate-1 mobile-text-wrap">
             Мой Профиль 👤
           </h2>
           <div className="w-32 h-2 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full mx-auto"></div>
         </div>
 
         <Tabs defaultValue="liked" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white/80 backdrop-blur-sm rounded-full border-4 border-orange-200 p-2 mb-8">
-            <TabsTrigger value="liked" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800 text-xs md:text-sm">
+          <TabsList className="grid w-full grid-cols-3 bg-white/80 backdrop-blur-sm rounded-full border-4 border-orange-200 p-2 mb-6 sm:mb-8">
+            <TabsTrigger value="liked" className="rounded-full font-comic-title text-purple-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800 text-xs sm:text-sm px-2 py-2">
               ❤️ Любимое ({likedStories.length})
             </TabsTrigger>
-            <TabsTrigger value="ai-stories" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs md:text-sm">
-              🤖 Мои ИИ-сказки ({aiStories.length})
+            <TabsTrigger value="ai-stories" className="rounded-full font-comic-title text-purple-700 data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs sm:text-sm px-2 py-2">
+              🤖 ИИ-сказки ({aiStories.length})
             </TabsTrigger>
-            <TabsTrigger value="user-stories" className="rounded-full font-bold text-purple-700 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800 text-xs md:text-sm">
-              ✍️ Мои авторские сказки ({userStories.length})
+            <TabsTrigger value="user-stories" className="rounded-full font-comic-title text-purple-700 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800 text-xs sm:text-sm px-2 py-2">
+              ✍️ Авторские ({userStories.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="liked">
             {loading ? (
               <div className="text-center py-12">
-                <p className="text-purple-700 font-medium text-lg">Загрузка...</p>
+                <p className="text-purple-700 font-comic-medium text-lg">Загрузка...</p>
               </div>
             ) : likedStories.length > 0 ? (
-              <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 {likedStories.map(renderStoryCard)}
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-8 shadow-lg max-w-md mx-auto">
-                  <Heart className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                  <p className="text-purple-700 font-medium text-lg mb-4">Нет понравившихся сказок</p>
-                  <p className="text-purple-500 text-sm">Поставьте лайк на понравившиеся сказки в каталоге</p>
+                <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-6 sm:p-8 shadow-lg max-w-md mx-auto">
+                  <Heart className="w-12 h-12 sm:w-16 sm:h-16 text-purple-400 mx-auto mb-4" />
+                  <p className="text-purple-700 font-comic-medium text-base sm:text-lg mb-4">Нет понравившихся сказок</p>
+                  <p className="text-purple-500 text-sm font-comic mobile-text-wrap">Поставьте лайк на понравившиеся сказки в каталоге</p>
                 </div>
               </div>
             )}
@@ -465,20 +440,20 @@ const Profile = () => {
           <TabsContent value="ai-stories">
             {loading ? (
               <div className="text-center py-12">
-                <p className="text-purple-700 font-medium text-lg">Загрузка...</p>
+                <p className="text-purple-700 font-comic-medium text-lg">Загрузка...</p>
               </div>
             ) : aiStories.length > 0 ? (
-              <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 {aiStories.map(renderStoryCard)}
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-8 shadow-lg max-w-md mx-auto">
-                  <BookOpen className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                  <p className="text-purple-700 font-medium text-lg mb-4">Нет ИИ-сказок</p>
-                  <p className="text-purple-500 text-sm">Создайте свои сказки с помощью ИИ</p>
+                <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-6 sm:p-8 shadow-lg max-w-md mx-auto">
+                  <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-green-400 mx-auto mb-4" />
+                  <p className="text-purple-700 font-comic-medium text-base sm:text-lg mb-4">Нет ИИ-сказок</p>
+                  <p className="text-purple-500 text-sm font-comic mobile-text-wrap">Создайте свои сказки с помощью ИИ</p>
                   <Link to="/ai-fairytales">
-                    <Button className="mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-full px-6 py-2 font-medium">
+                    <Button className="mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-full px-6 py-2 font-comic-medium btn-mobile">
                       Создать ИИ-сказку
                     </Button>
                   </Link>
@@ -490,20 +465,20 @@ const Profile = () => {
           <TabsContent value="user-stories">
             {loading ? (
               <div className="text-center py-12">
-                <p className="text-purple-700 font-medium text-lg">Загрузка...</p>
+                <p className="text-purple-700 font-comic-medium text-lg">Загрузка...</p>
               </div>
             ) : userStories.length > 0 ? (
-              <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 {userStories.map(renderStoryCard)}
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-8 shadow-lg max-w-md mx-auto">
-                  <BookOpen className="w-16 h-16 text-orange-400 mx-auto mb-4" />
-                  <p className="text-purple-700 font-medium text-lg mb-4">Нет авторских сказок</p>
-                  <p className="text-purple-500 text-sm">Опубликуйте свои собственные сказки</p>
+                <div className="bg-white/80 backdrop-blur-sm rounded-3xl border-4 border-orange-200 p-6 sm:p-8 shadow-lg max-w-md mx-auto">
+                  <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-orange-400 mx-auto mb-4" />
+                  <p className="text-purple-700 font-comic-medium text-base sm:text-lg mb-4">Нет авторских сказок</p>
+                  <p className="text-purple-500 text-sm font-comic mobile-text-wrap">Опубликуйте свои собственные сказки</p>
                   <Link to="/publish">
-                    <Button className="mt-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-medium">
+                    <Button className="mt-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white rounded-full px-6 py-2 font-comic-medium btn-mobile">
                       Опубликовать сказку
                     </Button>
                   </Link>

@@ -106,9 +106,29 @@
   }
 }
 
-/* Ensure consistent font usage across all devices */
+/* Unified font classes for consistent cross-device rendering */
 .font-comic {
   font-family: 'Comic Neue', 'Comic Sans MS', cursive, system-ui, -apple-system, sans-serif !important;
+}
+
+.font-comic-title {
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive, system-ui, -apple-system, sans-serif !important;
+  font-weight: 700;
+}
+
+.font-comic-medium {
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive, system-ui, -apple-system, sans-serif !important;
+  font-weight: 400;
+}
+
+/* iOS Safari font fix */
+@supports (-webkit-touch-callout: none) {
+  .font-comic,
+  .font-comic-title,
+  .font-comic-medium {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 /* Mobile-first responsive design improvements */
@@ -121,11 +141,28 @@
   /* Ensure text is readable on mobile */
   h1, h2, h3, h4, h5, h6 {
     line-height: 1.2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   
   /* Better button spacing on mobile */
   .btn-mobile {
     min-height: 44px;
     padding: 0.75rem 1rem;
+  }
+
+  /* Mobile text wrapping */
+  .mobile-text-wrap {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+}
+
+/* Touch-friendly interactive elements */
+@media (hover: none) and (pointer: coarse) {
+  button, .btn {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
